@@ -26,12 +26,19 @@ class PinaxPagesAppConf(AppConf):
 
     HOOKSET = "pinax.submissions.hooks.DefaultHookSet"
     MARKUP_RENDERER = "markdown.markdown"
+    FORMS = {}
 
     def configure_markup_renderer(self, value):
         return load_path_attr(value)
 
     def configure_hookset(self, value):
         return load_path_attr(value)()
+
+    def configure_forms(self, value):
+        forms = {}
+        for k, v in value.iteritems():
+            forms[k] = load_path_attr(v)
+        return forms
 
     class Meta:
         prefix = "pinax_submissions"
