@@ -18,4 +18,4 @@ class Command(BaseCommand):
                 content_type__pk=ct.id,
                 defaults={"name": "Can {}".format(action), "content_type": ct}
             )
-            print perm
+            print(perm)
