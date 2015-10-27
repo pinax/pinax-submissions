@@ -33,7 +33,6 @@ from .models import (
     SubmissionResult,
     SupportingDocument
 )
-from .utils import get_form
 
 
 # ******* symposion.proposals.views ******
@@ -57,12 +56,13 @@ def submission_submit_kind(request, kind_slug):
     if not request.user.is_authenticated():
         return redirect("home")  # @@@ unauth'd speaker info page?
 
-    SubmissionForm = get_form(settings.SUBMISSION_FORMS[kind_slug])
+    SubmissionForm = settings.PINAX_SUBMISSIONS_FORMS[kind_slug]
 
     if request.method == "POST":
         form = SubmissionForm(request.POST)
         if form.is_valid():
             submission = form.save(commit=False)
+            submission.submitter = request.user
             submission.kind = kind
             submission.save()
             form.save_m2m()
@@ -92,7 +92,7 @@ def submission_edit(request, pk):
         }
         return render(request, "pinax/submissions/submission_error.html", ctx)
 
-    FormClass = get_form(settings.SUBMISSION_FORMS[submission.kind.slug])
+    FormClass = settings.PINAX_SUBMISSIONS_FORMS[submission.kind.slug]
 
     if request.method == "POST":
         form = FormClass(request.POST, instance=submission)
