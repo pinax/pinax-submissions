@@ -1,10 +1,11 @@
+from django.db import models
 from django.db.models import Q
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 
-from django.contrib.auth.models import User, Permission
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
 from django.contrib.sites.models import Site
 
 
@@ -16,7 +17,7 @@ class DefaultHookSet(object):
 
     def reviewers(self):
         perm = Permission.objects.get(codename="reviews.can_review")
-        return User.objects.filter(
+        return get_user_model().objects.filter(
             Q(groups__permissions=perm) | Q(user_permissions=perm)
         ).distinct()
 
