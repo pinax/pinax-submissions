@@ -6,13 +6,10 @@ import os
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.db import models
-from django.db.models import Q
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
-
-from django.contrib.auth import get_user_model
 
 from model_utils.managers import InheritanceManager
 
@@ -131,32 +128,7 @@ class ReviewAssignment(models.Model):
 
     @classmethod
     def create_assignments(cls, submission, origin=AUTO_ASSIGNED_INITIAL):
-        reviewers = get_user_model().objects.exclude(
-            pk__in=[
-                assignment.user_id
-                for assignment in ReviewAssignment.objects.filter(
-                    submission=submission
-                )
-            ]
-        ).filter(
-            groups__name="reviewers",
-        ).filter(
-            Q(reviewassignment__opted_out=False) | Q(reviewassignment=None)
-        ).annotate(
-            num_assignments=models.Count("reviewassignment")
-        ).order_by(
-            "num_assignments", "?",
-        )
-        num_assigned_reviewers = ReviewAssignment.objects.filter(
-            submission=submission,
-            opted_out=False
-        ).count()
-        for reviewer in reviewers[:max(0, cls.NUM_REVIEWERS - num_assigned_reviewers)]:
-            cls._default_manager.create(
-                submission=submission,
-                user=reviewer,
-                origin=origin,
-            )
+        hookset.create_assignments(cls, submission, origin)
 
 
 class SubmissionMessage(models.Model):
