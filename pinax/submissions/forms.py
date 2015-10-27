@@ -10,7 +10,7 @@ class SupportingDocumentCreateForm(forms.ModelForm):
     class Meta:
         model = SupportingDocument
         fields = [
-            "file",
+            "document",
             "description",
         ]
 
