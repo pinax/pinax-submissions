@@ -36,7 +36,7 @@ class PinaxPagesAppConf(AppConf):
 
     def configure_forms(self, value):
         forms = {}
-        for k, v in value.iteritems():
+        for k, v in value.items():
             forms[k] = load_path_attr(v)
         return forms
 
