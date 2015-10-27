@@ -16,7 +16,7 @@ class DefaultHookSet(object):
         self.settings = settings
 
     def reviewers(self):
-        perm = Permission.objects.get(codename="reviews.can_review")
+        perm = Permission.objects.get(content_type__app_label="reviews", codename="can_review")
         return get_user_model().objects.filter(
             Q(groups__permissions=perm) | Q(user_permissions=perm)
         ).distinct()
