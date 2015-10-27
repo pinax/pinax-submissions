@@ -76,11 +76,6 @@ class SubmissionBase(models.Model):
         self.result.status = "standby"
         self.result.save()
 
-    def save(self, *args, **kwargs):
-        self.abstract_html = hookset.parse_content(self.abstract)
-        self.additional_notes_html = hookset.parse_content(self.additional_notes)
-        return super(SubmissionBase, self).save(*args, **kwargs)
-
     def can_edit(self):
         return True
 
