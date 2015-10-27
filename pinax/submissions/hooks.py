@@ -4,6 +4,7 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 
 from django.contrib.auth.models import User, Permission
+from django.contrib.auth import get_user_model
 from django.contrib.sites.models import Site
 
 
@@ -18,6 +19,34 @@ class DefaultHookSet(object):
         return User.objects.filter(
             Q(groups__permissions=perm) | Q(user_permissions=perm)
         ).distinct()
+
+    def create_assignments(self, cls, submission, origin):
+        reviewers = get_user_model().objects.exclude(
+            pk__in=[
+                assignment.user_id
+                for assignment in cls.objects.filter(
+                    submission=submission
+                )
+            ]
+        ).filter(
+            groups__name="reviewers",
+        ).filter(
+            Q(reviewassignment__opted_out=False) | Q(reviewassignment=None)
+        ).annotate(
+            num_assignments=models.Count("reviewassignment")
+        ).order_by(
+            "num_assignments", "?",
+        )
+        num_assigned_reviewers = cls.objects.filter(
+            submission=submission,
+            opted_out=False
+        ).count()
+        for reviewer in reviewers[:max(0, cls.NUM_REVIEWERS - num_assigned_reviewers)]:
+            cls._default_manager.create(
+                submission=submission,
+                user=reviewer,
+                origin=origin,
+            )
 
     def parse_content(self, content):
         return self.settings.PINAX_SUBMISSIONS_MARKUP_RENDERER(content)
