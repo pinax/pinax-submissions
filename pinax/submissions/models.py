@@ -179,6 +179,10 @@ class SubmissionResult(models.Model):
     ], default="undecided", verbose_name=_("Status"))
 
     @property
+    def accepted(self):
+        return self.status == "accepted"
+
+    @property
     def comment_count(self):
         self.submssion.reviews.count()
 
