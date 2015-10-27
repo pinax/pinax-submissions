@@ -57,11 +57,11 @@ class SubmissionBase(models.Model):
         elif result == "standby":
             self.standby()
 
-    def accepted(self):
+    def accept(self):
         self.result.status = "accepted"
         self.result.save()
 
-    def rejected(self):
+    def reject(self):
         self.result.status = "rejected"
         self.result.save()
 
