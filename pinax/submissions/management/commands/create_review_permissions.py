@@ -12,7 +12,7 @@ class Command(BaseCommand):
             app_label="reviews",
             defaults={"name": "reviews"}
         )
-        for action in ["review", "manage"]:
+        for action in ["review", "manage", "review_submissions"]:
             perm, created = Permission.objects.get_or_create(
                 codename="can_{}".format(action),
                 content_type__pk=ct.id,
