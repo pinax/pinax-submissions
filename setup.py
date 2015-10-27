@@ -27,6 +27,8 @@ setup(
     tests_require=[
     ],
     install_requires=[
+        "Markdown>=2.6.3",
+        "django-model-utils>=2.3.1",
         "django-appconf>=1.0.1"
     ],
     classifiers=[
