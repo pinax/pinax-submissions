@@ -16,7 +16,9 @@ class DefaultHookSet(object):
         self.settings = settings
 
     def reviewers(self):
-        perm = Permission.objects.get(content_type__app_label="reviews", codename="can_review")
+        perm = Permission.objects.get(
+            content_type__app_label="submissions",
+            codename="add_review")
         return get_user_model().objects.filter(
             Q(groups__permissions=perm) | Q(user_permissions=perm)
         ).distinct()
@@ -61,15 +63,25 @@ class DefaultHookSet(object):
         ctx.update(kwargs.get("context", {}))
         subject = "[%s] %s" % (
             current_site.name,
-            render_to_string("pinax/submissions/emails/%s/subject.txt" % kind, ctx).strip()
+            render_to_string(
+                "pinax/submissions/emails/%s/subject.txt" % kind,
+                ctx).strip()
         )
 
-        message_html = render_to_string("pinax/submission/emails/%s/message.html" % kind, ctx)
+        message_html = render_to_string(
+            "pinax/submission/emails/%s/message.html" % kind,
+            ctx
+        )
         message_plaintext = strip_tags(message_html)
 
         from_email = self.settings.DEFAULT_FROM_EMAIL
 
-        email = EmailMultiAlternatives(subject, message_plaintext, from_email, to)
+        email = EmailMultiAlternatives(
+            subject,
+            message_plaintext,
+            from_email,
+            to
+        )
         email.attach_alternative(message_html, "text/html")
         email.send()
 
