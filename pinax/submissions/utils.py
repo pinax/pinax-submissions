@@ -1,6 +1,7 @@
 import os
 import uuid
 
+from django.http import Http404
 from django.views import generic
 
 
@@ -12,7 +13,7 @@ class LoggedInMixin(object):
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated():
-            raise http.Http404
+            raise Http404
         return super(LoggedInMixin, self).dispatch(request, *args, **kwargs)
 
 
