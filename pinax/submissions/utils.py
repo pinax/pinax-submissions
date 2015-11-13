@@ -13,7 +13,6 @@ class LoggedInMixin(object):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated():
             raise http.Http404
-        self.kwargs = kwargs
         return super(LoggedInMixin, self).dispatch(request, *args, **kwargs)
 
 
