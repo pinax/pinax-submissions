@@ -2,10 +2,17 @@ from __future__ import unicode_literals
 
 from django.core.mail import send_mass_mail
 from django.db.models import Q
-from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseBadRequest, HttpResponseNotAllowed
+from django.http import (
+    Http404,
+    HttpResponse,
+    HttpResponseForbidden,
+    HttpResponseBadRequest,
+    HttpResponseNotAllowed
+)
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template import Context, Template
 from django.views import static
+from django.views.generic import FormView
 from django.views.decorators.http import require_POST
 
 from django.contrib import messages
@@ -33,6 +40,7 @@ from .models import (
     SubmissionResult,
     SupportingDocument
 )
+from .utils import LoggedInMixin
 
 
 # ******* symposion.proposals.views ******
@@ -49,17 +57,24 @@ def submission_submit(request):
     })
 
 
-def submission_submit_kind(request, kind_slug):
+class SubmitKindView(LoggedInMixin, FormView):
+    template_name = 'pinax/submissions/submission_submit_kind.html'
+    success_url = '/dashboard/'
 
-    kind = get_object_or_404(SubmissionKind, slug=kind_slug)
+    def get(self, request, *args, **kwargs):
+        kind_slug = self.kwargs['kind_slug']
+        form = settings.PINAX_SUBMISSIONS_FORMS[self.kwargs['kind_slug']]
+        kind = get_object_or_404(SubmissionKind, slug=kind_slug)
+        return render(
+            request,
+            self.template_name,
+            {'proposal_form': form, 'kind': kind}
+        )
 
-    if not request.user.is_authenticated():
-        return redirect("home")  # @@@ unauth'd speaker info page?
-
-    SubmissionForm = settings.PINAX_SUBMISSIONS_FORMS[kind_slug]
-
-    if request.method == "POST":
-        form = SubmissionForm(request.POST)
+    def post(self, request, *args, **kwargs):
+        kind_slug = self.kwargs['kind_slug']
+        kind = get_object_or_404(SubmissionKind, slug=kind_slug)
+        form = settings.PINAX_SUBMISSIONS_FORMS[kind_slug](request.POST)
         if form.is_valid():
             submission = form.save(commit=False)
             submission.submitter = request.user
@@ -67,14 +82,9 @@ def submission_submit_kind(request, kind_slug):
             submission.save()
             form.save_m2m()
             messages.success(request, _("Submission submitted."))
-            return redirect("dashboard")
-    else:
-        form = SubmissionForm()
+            return HttpResponseRedirect(success_url)
 
-    return render(request, "pinax/submissions/submission_submit_kind.html", {
-        "kind": kind,
-        "proposal_form": form,
-    })
+        return render(request, self.template_name, {'proposal_form': form})
 
 
 @login_required
