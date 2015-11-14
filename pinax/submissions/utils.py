@@ -8,6 +8,7 @@ from django.views import generic
 class LoggedInMixin(object):
     """
     A mixin requiring a user to be logged in.
+    If the user is not authenticated, show the 404 page.
 
     """
 
