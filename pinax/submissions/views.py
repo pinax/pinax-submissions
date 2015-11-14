@@ -56,7 +56,7 @@ class SubmissionKindList(LoggedInMixin, ListView):
         return SubmissionKind.objects.all()
 
 
-class SubmitKindView(LoggedInMixin, FormView):
+class SubmissionAdd(LoggedInMixin, FormView):
     template_name = 'pinax/submissions/submission_submit_kind.html'
     success_url = '/dashboard/'
 
@@ -245,7 +245,7 @@ def document_delete(request, pk):
     return redirect("submission_detail", document.submission.pk)
 
 
-# ***** symposion.reviews.views *******
+# REVIEW VIEWS #################################################################
 
 
 def access_not_permitted(request):
@@ -414,6 +414,7 @@ def review_assignment_opt_out(request, pk):
         ReviewAssignment.create_assignments(review_assignment.proposal, origin=ReviewAssignment.AUTO_ASSIGNED_LATER)
     return redirect("review_assignments")
 
+# RESULT NOTIFICATION VIEWS ####################################################
 
 @login_required
 def result_notification(request, status):

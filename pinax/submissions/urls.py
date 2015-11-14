@@ -12,7 +12,7 @@ urlpatterns = patterns(
     ),
     url(
         r"^submit/(?P<kind_slug>[\w-]+)/$",
-        views.SubmitKindView.as_view(),
+        views.SubmissionAdd.as_view(),
         name="submission_submit_kind"
     ),
     url(r"^(\d+)/$", views.submission_detail, name="submission_detail"),
