@@ -5,8 +5,16 @@ from . import views
 
 urlpatterns = patterns(
     "",
-    url(r"^submit/$", views.submission_submit, name="submission_submit"),
-    url(r"^submit/(?P<kind_slug>[\w-]+)/$", views.SubmitKindView.as_view(), name="submission_submit_kind"),
+    url(
+        r"^submit/$",
+        views.SubmissionKindList.as_view(),
+        name="submission_submit"
+    ),
+    url(
+        r"^submit/(?P<kind_slug>[\w-]+)/$",
+        views.SubmitKindView.as_view(),
+        name="submission_submit_kind"
+    ),
     url(r"^(\d+)/$", views.submission_detail, name="submission_detail"),
     url(r"^(\d+)/edit/$", views.submission_edit, name="submission_edit"),
     url(r"^(\d+)/cancel/$", views.submission_cancel, name="submission_cancel"),

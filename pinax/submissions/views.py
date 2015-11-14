@@ -12,7 +12,7 @@ from django.http import (
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template import Context, Template
 from django.views import static
-from django.views.generic import FormView
+from django.views.generic import FormView, ListView
 from django.views.decorators.http import require_POST
 
 from django.contrib import messages
@@ -43,18 +43,17 @@ from .models import (
 from .utils import LoggedInMixin
 
 
-# ******* symposion.proposals.views ******
+class SubmissionKindList(LoggedInMixin, ListView):
+    """
+    ListView to provide a list of submission kinds to choose from.
 
+    """
 
-def submission_submit(request):
-    if not request.user.is_authenticated():
-        messages.info(request, _("To submit a submission, please "
-                                 "<a href='{0}'>log in</a> and create a speaker profile "
-                                 "via the dashboard.".format(settings.LOGIN_URL)))
-        return redirect("home")  # @@@ unauth'd speaker info page?
-    return render(request, "pinax/submissions/submission_submit.html", {
-        "kinds": SubmissionKind.objects.all(),
-    })
+    template_name = 'pinax/submissions/submission_submit.html'
+    context_object_name = 'kinds'
+
+    def get_queryset(self):
+        return SubmissionKind.objects.all()
 
 
 class SubmitKindView(LoggedInMixin, FormView):
@@ -84,7 +83,11 @@ class SubmitKindView(LoggedInMixin, FormView):
             messages.success(request, _("Submission submitted."))
             return HttpResponseRedirect(success_url)
 
-        return render(request, self.template_name, {'proposal_form': form})
+        # @@@|TODO change this message
+        messages.success(request, _("Form failed."))
+        return render(request,
+                      self.template_name,
+                      {'proposal_form': form, 'kind': kind})
 
 
 @login_required
