@@ -7,7 +7,8 @@ from django.http import (
     HttpResponse,
     HttpResponseForbidden,
     HttpResponseBadRequest,
-    HttpResponseNotAllowed
+    HttpResponseNotAllowed,
+    HttpResponseRedirect
 )
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template import Context, Template
@@ -40,7 +41,7 @@ from .models import (
     SubmissionResult,
     SupportingDocument
 )
-from .utils import LoggedInMixin
+from .utils import LoggedInMixin, CanReviewMixin
 
 
 class SubmissionKindList(LoggedInMixin, ListView):
@@ -81,7 +82,7 @@ class SubmissionAdd(LoggedInMixin, FormView):
             submission.save()
             form.save_m2m()
             messages.success(request, _("Submission submitted."))
-            return HttpResponseRedirect(success_url)
+            return HttpResponseRedirect(self.success_url)
 
         # @@@|TODO change this message
         messages.success(request, _("Form failed."))
@@ -302,36 +303,28 @@ def review(request, assigned=False, reviewed="all"):
     return render(request, "pinax/submissions/review_list.html", ctx)
 
 
-@login_required
-def review_list(request, user_pk):
+class ReviewList(LoggedInMixin, CanReviewMixin, ListView):
 
-    # if they're not a reviewer admin and they aren't the person whose
-    # review list is being asked for, don't let them in
-    if not request.user.has_perm("reviews.can_manage"):
-        if not request.user.pk == user_pk:
-            return access_not_permitted(request)
+    template_name = 'pinax/submissions/review_list.html'
+    context_object_name = 'submissions'
 
-    queryset = SubmissionBase.objects.select_related("result")
-    reviewed = Review.objects.filter(user__pk=user_pk).values_list("submission", flat=True)
-    queryset = queryset.filter(pk__in=reviewed)
-    submissions = queryset.order_by("submitted")
-    submissions = submissions_generator(request, submissions, user_pk=user_pk)
+    def get_queryset(self):
+        queryset = SubmissionBase.objects.select_related("result")
+        reviewed = Review.objects.filter(user__pk=self.kwargs['user_pk']).values_list("submission", flat=True)
+        queryset = queryset.filter(pk__in=reviewed)
+        submissions = queryset.order_by("submitted")
+        submissions = submissions_generator(self.request, submissions, user_pk=self.kwargs['user_pk'])
 
-    ctx = {
-        "submissions": submissions,
-    }
-    return render(request, "pinax/submissions/review_list.html", ctx)
+        return submissions
 
 
-@login_required
-def review_admin(request):
-    if not request.user.has_perm("reviews.can_manage"):
-        return access_not_permitted(request)
+class ReviewAdmin(LoggedInMixin, CanReviewMixin, ListView):
 
-    ctx = {
-        "reviewers": hookset.reviewers(),
-    }
-    return render(request, "pinax/submissions/review_admin.html", ctx)
+    template_name = 'pinax/submissions/review_admin.html'
+    context_object_name = 'reviewers'
+
+    def get_queryset(self):
+        return hookset.reviewers()
 
 
 @login_required
@@ -415,6 +408,7 @@ def review_assignment_opt_out(request, pk):
     return redirect("review_assignments")
 
 # RESULT NOTIFICATION VIEWS ####################################################
+
 
 @login_required
 def result_notification(request, status):
