@@ -41,7 +41,11 @@ from .models import (
     SubmissionResult,
     SupportingDocument
 )
-from .utils import LoggedInMixin, CanReviewMixin
+from .utils import (
+    LoggedInMixin,
+    CanReviewMixin,
+    AddOrEditView
+)
 
 
 class SubmissionKindList(LoggedInMixin, ListView):
@@ -57,38 +61,39 @@ class SubmissionKindList(LoggedInMixin, ListView):
         return SubmissionKind.objects.all()
 
 
-class SubmissionAdd(LoggedInMixin, FormView):
+class SubmissionAdd(LoggedInMixin, AddOrEditView):
     template_name = 'pinax/submissions/submission_submit_kind.html'
     success_url = '/dashboard/'
 
-    def get(self, request, *args, **kwargs):
-        kind_slug = self.kwargs['kind_slug']
-        form = settings.PINAX_SUBMISSIONS_FORMS[self.kwargs['kind_slug']]
-        kind = get_object_or_404(SubmissionKind, slug=kind_slug)
-        return render(
-            request,
-            self.template_name,
-            {'proposal_form': form, 'kind': kind}
-        )
+    def get_form_class(self):
+        return settings.PINAX_SUBMISSIONS_FORMS[self.kwargs['kind_slug']]
 
-    def post(self, request, *args, **kwargs):
+    def get_context_data(self, **kwargs):
         kind_slug = self.kwargs['kind_slug']
         kind = get_object_or_404(SubmissionKind, slug=kind_slug)
-        form = settings.PINAX_SUBMISSIONS_FORMS[kind_slug](request.POST)
-        if form.is_valid():
-            submission = form.save(commit=False)
-            submission.submitter = request.user
-            submission.kind = kind
-            submission.save()
-            form.save_m2m()
-            messages.success(request, _("Submission submitted."))
-            return HttpResponseRedirect(self.success_url)
 
+        return super(SubmissionAdd, self).get_context_data(
+            kind=kind,
+            kind_slug=kind_slug,
+            proposal_form=self.get_form_class(),
+            **kwargs)
+
+    def form_valid(self, form):
+        ctx = self.get_context_data()
+        submission = form.save(commit=False)
+        submission.submitter = self.request.user
+        submission.kind = ctx.get('kind')
+        submission.save()
+        form.save_m2m()
+        messages.success(self.request, _("Submission submitted."))
+        return HttpResponseRedirect(self.success_url)
+
+    def form_invalid(self, form):
         # @@@|TODO change this message
-        messages.success(request, _("Form failed."))
-        return render(request,
-                      self.template_name,
-                      {'proposal_form': form, 'kind': kind})
+        messages.success(self.request, _("Form failed."))
+        context = self.get_context_data()
+        context['proposal_form'] = form
+        return self.render_to_response(context)
 
 
 @login_required
