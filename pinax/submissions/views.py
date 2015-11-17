@@ -70,6 +70,7 @@ class SubmissionAdd(LoggedInMixin, AddOrEditView):
 
     def get_context_data(self, **kwargs):
         kind_slug = self.kwargs['kind_slug']
+        # @@@|TODO properly use slug_url_kwarg here
         kind = get_object_or_404(SubmissionKind, slug=kind_slug)
 
         return super(SubmissionAdd, self).get_context_data(
