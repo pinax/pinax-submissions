@@ -13,7 +13,7 @@ from django.http import (
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template import Context, Template
 from django.views import static
-from django.views.generic import FormView, ListView
+from django.views.generic import ListView
 from django.views.decorators.http import require_POST
 
 from django.contrib import messages
@@ -104,7 +104,7 @@ class SubmissionEdit(LoggedInMixin, AddOrEditView):
 
     def get_object(self):
         pk = self.kwargs.get(self.pk_url_kwarg, None)
-        submission = get_object_or_404(SubmissionBase, pk=self.kwargs['pk'])
+        submission = get_object_or_404(SubmissionBase, pk=pk)
         queryset = SubmissionBase.objects.get_subclass(pk=submission.pk)
         return queryset
 
@@ -114,7 +114,7 @@ class SubmissionEdit(LoggedInMixin, AddOrEditView):
     def get_queryset(self):
         submission = self.get_object()
 
-        if request.user != submission.submitter:
+        if self.request.user != submission.submitter:
             raise Http404()
 
         if not submission.can_edit():
@@ -122,13 +122,17 @@ class SubmissionEdit(LoggedInMixin, AddOrEditView):
                 "title": "Submission editing closed",
                 "body": "Submission editing is closed for this session type."
             }
-            return render(request, "pinax/submissions/submission_error.html", ctx)
+            return render(
+                self.request,
+                "pinax/submissions/submission_error.html",
+                ctx
+            )
 
         return submission
 
     def get_context_data(self, **kwargs):
         return super(SubmissionEdit, self).get_context_data(
-            submission = self.get_object(),
+            submission=self.get_object(),
             **kwargs)
 
     def form_valid(self, form):
@@ -156,7 +160,11 @@ class SubmissionEdit(LoggedInMixin, AddOrEditView):
 
 @login_required
 def submission_detail(request, pk):
-    submission = get_object_or_404(SubmissionBase, pk=pk, submitter=request.user)
+    submission = get_object_or_404(
+        SubmissionBase,
+        pk=pk,
+        submitter=request.user
+    )
     submission = SubmissionBase.objects.get_subclass(pk=submission.pk)
 
     message_form = SubmitterCommentForm()
@@ -200,7 +208,11 @@ def submission_detail(request, pk):
 
 @login_required
 def submission_cancel(request, pk):
-    submission = get_object_or_404(SubmissionBase, pk=pk, submitter=request.user)
+    submission = get_object_or_404(
+        SubmissionBase,
+        pk=pk,
+        submitter=request.user
+    )
     submission = SubmissionBase.objects.get_subclass(pk=submission.pk)
 
     if request.method == "POST":
@@ -216,7 +228,11 @@ def submission_cancel(request, pk):
 
 @login_required
 def document_create(request, proposal_pk):
-    submission = get_object_or_404(SubmissionBase, pk=proposal_pk, submitter=request.user)
+    submission = get_object_or_404(
+        SubmissionBase,
+        pk=proposal_pk,
+        submitter=request.user
+    )
     submission = SubmissionBase.objects.get_subclass(pk=submission.pk)
 
     if submission.cancelled:
@@ -249,19 +265,27 @@ def document_download(request, pk, *args):
         # we definitely don't want Django's crappy default :-)
         del response["content-type"]
     else:
-        response = static.serve(request, document.file.name, document_root=settings.MEDIA_ROOT)
+        response = static.serve(
+            request,
+            document.file.name,
+            document_root=settings.MEDIA_ROOT
+        )
     return response
 
 
 @login_required
 def document_delete(request, pk):
-    document = get_object_or_404(SupportingDocument, pk=pk, uploaded_by=request.user)
+    document = get_object_or_404(
+        SupportingDocument,
+        pk=pk,
+        uploaded_by=request.user
+    )
     if request.method == "POST":
         document.delete()
     return redirect("submission_detail", document.submission.pk)
 
 
-# REVIEW VIEWS #################################################################
+# REVIEW VIEWS ################################################################
 
 
 def access_not_permitted(request):
@@ -280,8 +304,9 @@ def submissions_generator(request, queryset, user_pk=None):
         yield obj
 
 
-# Returns a list of all proposals, proposals reviewed by the user, or the proposals the user has
-# yet to review depending on the link user clicks in dashboard
+# Returns a list of all proposals, proposals reviewed by the user, or the
+# proposals the user has yet to review depending on the link user clicks in
+# dashboard
 @login_required
 def review(request, assigned=False, reviewed="all"):
 
@@ -305,7 +330,8 @@ def review(request, assigned=False, reviewed="all"):
         queryset = queryset.filter(reviews__user=request.user)
         reviewed = "user_reviewed"
     else:
-        queryset = queryset.exclude(reviews__user=request.user).exclude(submitter=request.user)
+        queryset = queryset.exclude(
+            reviews__user=request.user).exclude(submitter=request.user)
         reviewed = "user_not_reviewed"
 
     submissions = submissions_generator(request, queryset)
@@ -325,10 +351,16 @@ class ReviewList(LoggedInMixin, CanReviewMixin, ListView):
 
     def get_queryset(self):
         queryset = SubmissionBase.objects.select_related("result")
-        reviewed = Review.objects.filter(user__pk=self.kwargs['user_pk']).values_list("submission", flat=True)
+        reviewed = Review.objects.filter(
+            user__pk=self.kwargs['user_pk']
+            ).values_list("submission", flat=True)
         queryset = queryset.filter(pk__in=reviewed)
         submissions = queryset.order_by("submitted")
-        submissions = submissions_generator(self.request, submissions, user_pk=self.kwargs['user_pk'])
+        submissions = submissions_generator(
+            self.request,
+            submissions,
+            user_pk=self.kwargs['user_pk']
+        )
 
         return submissions
 
@@ -344,7 +376,8 @@ class ReviewAdmin(LoggedInMixin, CanReviewMixin, ListView):
 
 @login_required
 def review_detail(request, pk):
-    submissions = SubmissionBase.objects.select_related("result").select_subclasses()
+    submissions = SubmissionBase.objects.\
+        select_related("result").select_subclasses()
     submission = get_object_or_404(submissions, pk=pk)
 
     if not request.user.has_perm("reviews.can_review"):
@@ -374,7 +407,8 @@ def review_detail(request, pk):
         review_form = ReviewForm(initial=initial)
         message_form = SubmitterCommentForm()
 
-    reviews = Review.objects.filter(submission=submission).order_by("-submitted_at")
+    reviews = Review.objects.filter(
+        submission=submission).order_by("-submitted_at")
     messages = submission.messages.order_by("submitted_at")
 
     return render(request, "pinax/submissions/review_detail.html", {
@@ -415,14 +449,21 @@ def review_assignments(request):
 @login_required
 @require_POST
 def review_assignment_opt_out(request, pk):
-    review_assignment = get_object_or_404(ReviewAssignment, pk=pk, user=request.user)
+    review_assignment = get_object_or_404(
+        ReviewAssignment,
+        pk=pk,
+        user=request.user
+    )
     if not review_assignment.opted_out:
         review_assignment.opted_out = True
         review_assignment.save()
-        ReviewAssignment.create_assignments(review_assignment.proposal, origin=ReviewAssignment.AUTO_ASSIGNED_LATER)
+        ReviewAssignment.create_assignments(
+            review_assignment.proposal,
+            origin=ReviewAssignment.AUTO_ASSIGNED_LATER
+        )
     return redirect("review_assignments")
 
-# RESULT NOTIFICATION VIEWS ####################################################
+# RESULT NOTIFICATION VIEWS ###################################################
 
 
 @login_required
@@ -430,7 +471,8 @@ def result_notification(request, status):
     if not request.user.has_perm("reviews.can_manage"):
         return access_not_permitted(request)
 
-    submissions = SubmissionBase.objects.filter(result__status=status).select_related("result").select_subclasses()
+    submissions = SubmissionBase.objects.filter(
+        result__status=status).select_related("result").select_subclasses()
     notification_templates = NotificationTemplate.objects.all()
 
     ctx = {
@@ -464,7 +506,8 @@ def result_notification_prepare(request, status):
 
     notification_template_pk = request.POST.get("notification_template", "")
     if notification_template_pk:
-        notification_template = NotificationTemplate.objects.get(pk=notification_template_pk)
+        notification_template = NotificationTemplate.objects.get(
+            pk=notification_template_pk)
     else:
         notification_template = None
 
@@ -474,7 +517,11 @@ def result_notification_prepare(request, status):
         "submissions": submissions,
         "submission_pks": ",".join([str(pk) for pk in submission_pks]),
     }
-    return render(request, "pinax/submissions/result_notification_prepare.html", ctx)
+    return render(
+        request,
+        "pinax/submissions/result_notification_prepare.html",
+        ctx
+    )
 
 
 @login_required
@@ -485,7 +532,8 @@ def result_notification_send(request, status):
     if not request.user.has_perm("reviews.can_manage"):
         return access_not_permitted(request)
 
-    if not all([k in request.POST for k in ["submission_pks", "from_address", "subject", "body"]]):
+    if not all([k in request.POST for k in ["submission_pks", "from_address",
+                                            "subject", "body"]]):
         return HttpResponseBadRequest()
 
     try:
@@ -502,7 +550,8 @@ def result_notification_send(request, status):
 
     notification_template_pk = request.POST.get("notification_template", "")
     if notification_template_pk:
-        notification_template = NotificationTemplate.objects.get(pk=notification_template_pk)
+        notification_template = NotificationTemplate.objects.get(
+            pk=notification_template_pk)
     else:
         notification_template = None
 
