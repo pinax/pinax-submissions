@@ -21,8 +21,8 @@ urlpatterns = patterns(
         name="submission_detail"
     ),
     url(
-        r"^(\d+)/edit/$",
-        views.submission_edit,
+        r"^(?P<pk>\d+)/edit/$",
+        views.SubmissionEdit.as_view(),
         name="submission_edit"
     ),
     url(

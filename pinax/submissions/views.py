@@ -96,52 +96,62 @@ class SubmissionAdd(LoggedInMixin, AddOrEditView):
         return self.render_to_response(context)
 
 
-@login_required
-def submission_edit(request, pk):
-    submission = get_object_or_404(SubmissionBase, pk=pk)
-    submission = SubmissionBase.objects.get_subclass(pk=submission.pk)
+class SubmissionEdit(LoggedInMixin, AddOrEditView):
 
-    if request.user != submission.submitter:
-        raise Http404()
+    template_name = "pinax/submissions/submission_edit.html"
+    # @@@|TODO change url
+    success_url = '/dashboard/'
 
-    if not submission.can_edit():
-        ctx = {
-            "title": "Submission editing closed",
-            "body": "Submission editing is closed for this session type."
-        }
-        return render(request, "pinax/submissions/submission_error.html", ctx)
+    def get_object(self):
+        pk = self.kwargs.get(self.pk_url_kwarg, None)
+        submission = get_object_or_404(SubmissionBase, pk=self.kwargs['pk'])
+        queryset = SubmissionBase.objects.get_subclass(pk=submission.pk)
+        return queryset
 
-    FormClass = settings.PINAX_SUBMISSIONS_FORMS[submission.kind.slug]
+    def get_form_class(self):
+        return settings.PINAX_SUBMISSIONS_FORMS[self.get_object().kind.slug]
 
-    if request.method == "POST":
-        form = FormClass(request.POST, instance=submission)
-        if form.is_valid():
-            form.save()
-            if hasattr(submission, "reviews"):
-                users = User.objects.filter(
-                    Q(review__submission=submission) |
-                    Q(submissionmessage__submission=submission)
+    def get_queryset(self):
+        submission = self.get_object()
+
+        if request.user != submission.submitter:
+            raise Http404()
+
+        if not submission.can_edit():
+            ctx = {
+                "title": "Submission editing closed",
+                "body": "Submission editing is closed for this session type."
+            }
+            return render(request, "pinax/submissions/submission_error.html", ctx)
+
+        return submission
+
+    def get_context_data(self, **kwargs):
+        return super(SubmissionEdit, self).get_context_data(
+            submission = self.get_object(),
+            **kwargs)
+
+    def form_valid(self, form):
+        submission = self.get_object()
+        form.save()
+        if hasattr(submission, "reviews"):
+            users = User.objects.filter(
+                Q(review__submission=submission) |
+                Q(submissionmessage__submission=submission)
+            )
+            users = users.exclude(pk=self.request.user.pk).distinct()
+            for user in users:
+                ctx = {
+                    "user": self.request.user,
+                    "submission": submission,
+                }
+                hookset.send_email(
+                    [user.email],
+                    "submission_updated",
+                    context=ctx
                 )
-                users = users.exclude(pk=request.user.pk).distinct()
-                for user in users:
-                    ctx = {
-                        "user": request.user,
-                        "submission": submission,
-                    }
-                    hookset.send_email(
-                        [user.email],
-                        "submission_updated",
-                        context=ctx
-                    )
-            messages.success(request, "Submission updated.")
-            return redirect("submission_detail", submission.pk)
-    else:
-        form = FormClass(instance=submission)
-
-    return render(request, "pinax/submissions/submission_edit.html", {
-        "submission": submission,
-        "form": form,
-    })
+        messages.success(self.request, "Submission updated.")
+        return HttpResponseRedirect(self.success_url)
 
 
 @login_required
