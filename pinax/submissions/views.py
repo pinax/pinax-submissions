@@ -69,7 +69,6 @@ class SubmissionAdd(LoggedInMixin, FormView):
 
     def get_context_data(self, **kwargs):
         kind_slug = self.kwargs['kind_slug']
-        # @@@|TODO properly use slug_url_kwarg here
         kind = get_object_or_404(SubmissionKind, slug=kind_slug)
 
         return super(SubmissionAdd, self).get_context_data(
@@ -105,14 +104,7 @@ class SubmissionEdit(LoggedInMixin, UpdateView):
     def get_object(self):
         pk = self.kwargs.get(self.pk_url_kwarg, None)
         submission = get_object_or_404(SubmissionBase, pk=pk)
-        queryset = SubmissionBase.objects.get_subclass(pk=submission.pk)
-        return queryset
-
-    def get_form_class(self):
-        return settings.PINAX_SUBMISSIONS_FORMS[self.get_object().kind.slug]
-
-    def get_queryset(self):
-        submission = self.get_object()
+        submission = SubmissionBase.objects.get_subclass(pk=submission.pk)
 
         if self.request.user != submission.submitter:
             raise Http404()
@@ -127,8 +119,10 @@ class SubmissionEdit(LoggedInMixin, UpdateView):
                 "pinax/submissions/submission_error.html",
                 ctx
             )
-
         return submission
+
+    def get_form_class(self):
+        return settings.PINAX_SUBMISSIONS_FORMS[self.get_object().kind.slug]
 
     def get_context_data(self, **kwargs):
         return super(SubmissionEdit, self).get_context_data(
