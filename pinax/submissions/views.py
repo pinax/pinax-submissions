@@ -13,7 +13,7 @@ from django.http import (
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template import Context, Template
 from django.views import static
-from django.views.generic import ListView
+from django.views.generic import ListView, UpdateView, FormView
 from django.views.decorators.http import require_POST
 
 from django.contrib import messages
@@ -43,8 +43,7 @@ from .models import (
 )
 from .utils import (
     LoggedInMixin,
-    CanReviewMixin,
-    AddOrEditView
+    CanReviewMixin
 )
 
 
@@ -61,7 +60,7 @@ class SubmissionKindList(LoggedInMixin, ListView):
         return SubmissionKind.objects.all()
 
 
-class SubmissionAdd(LoggedInMixin, AddOrEditView):
+class SubmissionAdd(LoggedInMixin, FormView):
     template_name = 'pinax/submissions/submission_submit_kind.html'
     success_url = '/dashboard/'
 
@@ -97,7 +96,7 @@ class SubmissionAdd(LoggedInMixin, AddOrEditView):
         return self.render_to_response(context)
 
 
-class SubmissionEdit(LoggedInMixin, AddOrEditView):
+class SubmissionEdit(LoggedInMixin, UpdateView):
 
     template_name = "pinax/submissions/submission_edit.html"
     # @@@|TODO change url

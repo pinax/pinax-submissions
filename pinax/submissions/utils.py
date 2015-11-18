@@ -5,16 +5,6 @@ from django.http import Http404
 from django.views import generic
 
 
-class AddOrEditView(generic.UpdateView):
-
-    def get_object(self, *args, **kwargs):
-        pk = self.kwargs.get(self.pk_url_kwarg)
-        slug = self.kwargs.get(self.slug_url_kwarg)
-        if pk is None and slug is None:
-            return None
-        return super(AddOrEditView, self).get_object(*args, **kwargs)
-
-
 class LoggedInMixin(object):
     """
     A mixin requiring a user to be logged in.
@@ -49,9 +39,9 @@ class CanManageMixin(object):
     """
 
     def dispatch(self, request, *args, **kwargs):
-            if not request.user.has_perm("reviews.can_manage"):
-                render(request, "pinax/submissions/access_not_permitted.html")
-            return super(CanManageMixin, self).dispatch(request, *args, **kwargs)
+        if not request.user.has_perm("reviews.can_manage"):
+            render(request, "pinax/submissions/access_not_permitted.html")
+        return super(CanManageMixin, self).dispatch(request, *args, **kwargs)
 
 
 def uuid_filename(instance, filename):
