@@ -221,25 +221,32 @@ class SubmissionDetail(LoggedInMixin, DetailView):
         return context
 
 
+class SubmissionCancel(LoggedInMixin, DetailView):
 
-@login_required
-def submission_cancel(request, pk):
-    submission = get_object_or_404(
-        SubmissionBase,
-        pk=pk,
-        submitter=request.user
-    )
-    submission = SubmissionBase.objects.get_subclass(pk=submission.pk)
+    template_name = "pinax/submissions/submission_cancel.html"
 
-    if request.method == "POST":
+    def get_object(self, queryset=None):
+        pk = self.kwargs.get(self.pk_url_kwarg, None)
+        submission = get_object_or_404(
+            SubmissionBase,
+            pk=pk,
+            submitter=self.request.user
+        )
+        submission = SubmissionBase.objects.get_subclass(pk=submission.pk)
+        return submission
+
+    def post(self, request, *args, **kwargs):
+        submission = self.get_object()
         submission.cancel()
-        # @@@ fire off email to submitter and other speakers
+        # @@@|TODO fire off email to submitter and other speakers
         messages.success(request, "Submission has been cancelled")
         return redirect("dashboard")
 
-    return render(request, "pinax/submissions/submission_cancel.html", {
-        "submission": submission,
-    })
+    def get_context_data(self, **kwargs):
+        context = super(SubmissionCancel, self).get_context_data(**kwargs)
+        self.object = self.get_object()
+        context['submission'] = self.object
+        return context
 
 
 @login_required

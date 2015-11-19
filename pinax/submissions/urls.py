@@ -26,8 +26,8 @@ urlpatterns = patterns(
         name="submission_edit"
     ),
     url(
-        r"^(\d+)/cancel/$",
-        views.submission_cancel,
+        r"^(?P<pk>\d+)/cancel/$",
+        views.SubmissionCancel.as_view(),
         name="submission_cancel"
     ),
     url(
