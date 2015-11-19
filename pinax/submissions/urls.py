@@ -16,8 +16,8 @@ urlpatterns = patterns(
         name="submission_submit_kind"
     ),
     url(
-        r"^(\d+)/$",
-        views.submission_detail,
+        r"^(?P<pk>\d+)/$",
+        views.SubmissionDetail.as_view(),
         name="submission_detail"
     ),
     url(

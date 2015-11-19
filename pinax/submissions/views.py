@@ -13,7 +13,12 @@ from django.http import (
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template import Context, Template
 from django.views import static
-from django.views.generic import ListView, UpdateView, FormView
+from django.views.generic import (
+    ListView,
+    UpdateView,
+    FormView,
+    DetailView
+)
 from django.views.decorators.http import require_POST
 
 from django.contrib import messages
@@ -152,52 +157,69 @@ class SubmissionEdit(LoggedInMixin, UpdateView):
         return HttpResponseRedirect(self.success_url)
 
 
-@login_required
-def submission_detail(request, pk):
-    submission = get_object_or_404(
-        SubmissionBase,
-        pk=pk,
-        submitter=request.user
-    )
-    submission = SubmissionBase.objects.get_subclass(pk=submission.pk)
+class SubmissionDetail(LoggedInMixin, DetailView):
 
-    message_form = SubmitterCommentForm()
-    if request.method == "POST":
-        message_form = SubmitterCommentForm(request.POST)
-        if message_form.is_valid():
-            message = message_form.save(commit=False)
-            message.user = request.user
-            message.submission = submission
-            message.save()
+    template_name = "pinax/submissions/submission_detail.html"
 
-            reviewers = User.objects.filter(
-                id__in=SubmissionMessage.objects.filter(
-                    submission=submission
-                ).exclude(
-                    user=request.user
-                ).distinct().values_list("user", flat=True)
+    def get_object(self, queryset=None):
+        pk = self.kwargs.get(self.pk_url_kwarg, None)
+        submission = get_object_or_404(
+            SubmissionBase,
+            pk=pk,
+            submitter=self.request.user
+        )
+        submission = SubmissionBase.objects.get_subclass(pk=submission.pk)
+        return submission
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        form = SubmitterCommentForm(self.request.POST)
+
+        if form.is_valid():
+            return self.form_valid(form)
+        return self.form_invalid(form)
+
+    def form_valid(self, form):
+        submission = self.get_object()
+        message = form.save(commit=False)
+        message.user = self.request.user
+        message.submission = submission
+        message.save()
+
+        reviewers = User.objects.filter(
+            id__in=SubmissionMessage.objects.filter(
+                submission=submission
+            ).exclude(
+                user=self.request.user
+            ).distinct().values_list("user", flat=True)
+        )
+
+        for reviewer in reviewers:
+            ctx = {
+                "submission": submission,
+                "message": message,
+                "reviewer": True,
+            }
+            hookset.send_email(
+                [reviewer.email],
+                "submission_new_message",
+                context=ctx
             )
 
-            for reviewer in reviewers:
-                ctx = {
-                    "submission": submission,
-                    "message": message,
-                    "reviewer": True,
-                }
-                hookset.send_email(
-                    [reviewer.email],
-                    "submission_new_message",
-                    context=ctx
-                )
+        return redirect(self.request.path)
 
-            return redirect(request.path)
-    else:
-        message_form = SubmitterCommentForm()
+    def form_invalid(self, form):
+        messages.success(self.request, _("Comment Form failed."))
+        return self.render_to_response(
+            self.get_context_data(message_form=form))
 
-    return render(request, "pinax/submissions/submission_detail.html", {
-        "submission": submission,
-        "message_form": message_form
-    })
+    def get_context_data(self, **kwargs):
+        context = super(SubmissionDetail, self).get_context_data(**kwargs)
+        self.object = self.get_object()
+        context['submission'] = self.object
+        context['message_form'] = SubmitterCommentForm(instance=self.object)
+        return context
+
 
 
 @login_required
