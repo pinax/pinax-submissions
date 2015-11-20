@@ -1,8 +1,7 @@
-import os
-import uuid
-
 from django.http import Http404
-from django.views import generic
+from django.shortcuts import render
+
+from .models import SubmissionResult
 
 
 class LoggedInMixin(object):
@@ -26,7 +25,7 @@ class CanReviewMixin(object):
     """
 
     def dispatch(self, request, *args, **kwargs):
-        if not request.user.has_perm("reviews.can_manage"):
+        if not request.user.has_perm("reviews.can_review_submissions"):
             if not request.user.pk == self.kwargs['user_pk']:
                 render(request, "pinax/submissions/access_not_permitted.html")
         return super(CanReviewMixin, self).dispatch(request, *args, **kwargs)
@@ -44,7 +43,12 @@ class CanManageMixin(object):
         return super(CanManageMixin, self).dispatch(request, *args, **kwargs)
 
 
-def uuid_filename(instance, filename):
-    ext = filename.split(".")[-1]
-    filename = "%s.%s" % (uuid.uuid4(), ext)
-    return os.path.join("document", filename)
+def submissions_generator(request, queryset, user_pk=None):
+    for obj in queryset:
+        SubmissionResult.objects.get_or_create(submission=obj)
+        lookup_params = dict(submission=obj)
+        if user_pk:
+            lookup_params["user__pk"] = user_pk
+        else:
+            lookup_params["user"] = request.user
+        yield obj

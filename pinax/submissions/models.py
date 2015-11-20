@@ -14,7 +14,12 @@ from django.utils.translation import ugettext_lazy as _
 from model_utils.managers import InheritanceManager
 
 from .hooks import hookset
-from .utils import uuid_filename
+
+
+def uuid_filename(instance, filename):
+    ext = filename.split(".")[-1]
+    filename = "%s.%s" % (uuid.uuid4(), ext)
+    return os.path.join("document", filename)
 
 
 @python_2_unicode_compatible
