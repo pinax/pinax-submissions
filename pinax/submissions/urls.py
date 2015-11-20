@@ -48,25 +48,25 @@ urlpatterns = patterns(
 
     url(
         r"^all/$",
-        views.Review.as_view(),
+        views.Reviews.as_view(),
         {"reviewed": "all"},
         name="review_section"
     ),
     url(
         r"^reviewed/$",
-        views.review,
+        views.Reviews.as_view(),
         {"reviewed": "reviewed"},
         name="user_reviewed"
     ),
     url(
         r"^not-reviewed/$",
-        views.review,
+        views.Reviews.as_view(),
         {"reviewed": "not_reviewed"},
         name="user_not_reviewed"
     ),
     url(
         r"^assignments/$",
-        views.review,
+        views.Reviews.as_view(),
         {"assigned": True},
         name="review_section_assignments"
     ),
@@ -97,7 +97,7 @@ urlpatterns = patterns(
     ),
     url(
         r"^reviews/(?P<pk>\d+)/$",
-        views.review_detail,
+        views.ReviewDetail.as_view(),
         name="review_detail"
     ),
 

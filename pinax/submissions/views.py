@@ -257,7 +257,7 @@ def access_not_permitted(request):
     return render(request, "pinax/submissions/access_not_permitted.html")
 
 
-class Review(LoggedInMixin, CanReviewMixin, ListView):
+class Reviews(LoggedInMixin, CanReviewMixin, ListView):
     """
     Returns a list of all proposals, proposals reviewed by the user, or the
     proposals the user has yet to review depending on the link user clicks in
@@ -272,7 +272,7 @@ class Review(LoggedInMixin, CanReviewMixin, ListView):
     queryset = SubmissionBase.objects.all()
 
     def get_context_data(self, **kwargs):
-        context = super(Review, self).get_context_data(**kwargs)
+        context = super(Reviews, self).get_context_data(**kwargs)
         queryset = self.queryset
 
         if self.assigned:
@@ -332,50 +332,55 @@ class ReviewAdmin(LoggedInMixin, CanReviewMixin, ListView):
         return hookset.reviewers()
 
 
-@login_required
-def review_detail(request, pk):
-    submissions = SubmissionBase.objects.\
-        select_related("result").select_subclasses()
-    submission = get_object_or_404(submissions, pk=pk)
+class ReviewDetail(LoggedInMixin, CanReviewMixin, DetailView):
 
-    if not request.user.has_perm("reviews.can_review"):
-        return access_not_permitted(request)
+    template_name = "pinax/submissions/review_detail.html"
 
-    admin = request.user.is_staff
+    def get_object(self, queryset=None):
+        pk = self.kwargs.get(self.pk_url_kwarg, None)
+        submissions = SubmissionBase.objects.\
+            select_related("result").select_subclasses()
+        submission = get_object_or_404(submissions, pk=pk)
+        return submission
 
-    if request.method == "POST":
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        admin = self.request.user.is_staff
         if "message_submit" in request.POST:
-            message_form = SubmitterCommentForm(request.POST)
             if message_form.is_valid():
-                message = message_form.save(commit=False)
-                message.user = request.user
-                message.submission = submission
-                message.save()
-                return redirect(request.path)
-            else:
-                initial = {}
-                review_form = ReviewForm(initial=initial)
+                return self.form_valid(form)
         elif "result_submit" in request.POST:
             if admin:
                 result = request.POST["result_submit"]
-                submission.update_result(result)
+                self.object.update_result(result)
             return redirect(request.path)
-    else:
+
+    def form_valid(self, form):
+        message = message_form.save(commit=False)
+        message.user = self.request.user
+        message.submission = self.object
+        message.save()
+        return redirect(request.path)
+
+    def form_invalid(self, form):
         initial = {}
         review_form = ReviewForm(initial=initial)
-        message_form = SubmitterCommentForm()
+        return self.render_to_response(
+            self.get_context_data(review_form=review_form))
 
-    reviews = Review.objects.filter(
-        submission=submission).order_by("-submitted_at")
-    messages = submission.messages.order_by("submitted_at")
+    def get_context_data(self, **kwargs):
+        context = super(ReviewDetail, self).get_context_data(**kwargs)
+        submission = self.get_object()
+        reviews = Review.objects.filter(
+            submission=submission).order_by("-submitted_at")
+        messages = submission.messages.order_by("submitted_at")
 
-    return render(request, "pinax/submissions/review_detail.html", {
-        "submission": submission,
-        "reviews": reviews,
-        "review_messages": messages,
-        "review_form": review_form,
-        "message_form": message_form
-    })
+        context["submission"] = submission
+        context["reviews"] = reviews
+        context["review_messages"] = messages
+        context["review_form"] = ReviewForm(initial={})
+        context["message_form"] = SubmitterCommentForm()
+        return context
 
 
 @login_required
