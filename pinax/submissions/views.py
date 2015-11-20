@@ -250,65 +250,6 @@ class SubmissionCancel(LoggedInMixin, DetailView):
         return context
 
 
-@login_required
-def document_create(request, proposal_pk):
-    submission = get_object_or_404(
-        SubmissionBase,
-        pk=proposal_pk,
-        submitter=request.user
-    )
-    submission = SubmissionBase.objects.get_subclass(pk=submission.pk)
-
-    if submission.cancelled:
-        return HttpResponseForbidden()
-
-    if request.method == "POST":
-        form = SupportingDocumentCreateForm(request.POST, request.FILES)
-        if form.is_valid():
-            document = form.save(commit=False)
-            document.submission = submission
-            document.uploaded_by = request.user
-            document.save()
-            return redirect("submission_detail", submission.pk)
-    else:
-        form = SupportingDocumentCreateForm()
-
-    return render(request, "pinax/submissions/document_create.html", {
-        "submission": submission,
-        "form": form,
-    })
-
-
-@login_required
-def document_download(request, pk, *args):
-    document = get_object_or_404(SupportingDocument, pk=pk)
-    if getattr(settings, "USE_X_ACCEL_REDIRECT", False):
-        response = HttpResponse()
-        response["X-Accel-Redirect"] = document.file.url
-        # delete content-type to allow Gondor to determine the filetype and
-        # we definitely don't want Django's crappy default :-)
-        del response["content-type"]
-    else:
-        response = static.serve(
-            request,
-            document.file.name,
-            document_root=settings.MEDIA_ROOT
-        )
-    return response
-
-
-@login_required
-def document_delete(request, pk):
-    document = get_object_or_404(
-        SupportingDocument,
-        pk=pk,
-        uploaded_by=request.user
-    )
-    if request.method == "POST":
-        document.delete()
-    return redirect("submission_detail", document.submission.pk)
-
-
 # REVIEW VIEWS ################################################################
 
 
@@ -482,7 +423,6 @@ def review_assignment_opt_out(request, pk):
 
 # RESULT NOTIFICATION VIEWS ###################################################
 
-
 @login_required
 def result_notification(request, status):
     if not request.user.has_perm("reviews.can_manage"):
@@ -592,3 +532,65 @@ def result_notification_send(request, status):
     send_mass_mail(emails)
 
     return redirect("result_notification", status=status)
+
+
+# DOCUMENT VIEWS #############################################################
+# @@@|TODO write class-based views for these
+
+@login_required
+def document_create(request, proposal_pk):
+    submission = get_object_or_404(
+        SubmissionBase,
+        pk=proposal_pk,
+        submitter=request.user
+    )
+    submission = SubmissionBase.objects.get_subclass(pk=submission.pk)
+
+    if submission.cancelled:
+        return HttpResponseForbidden()
+
+    if request.method == "POST":
+        form = SupportingDocumentCreateForm(request.POST, request.FILES)
+        if form.is_valid():
+            document = form.save(commit=False)
+            document.submission = submission
+            document.uploaded_by = request.user
+            document.save()
+            return redirect("submission_detail", submission.pk)
+    else:
+        form = SupportingDocumentCreateForm()
+
+    return render(request, "pinax/submissions/document_create.html", {
+        "submission": submission,
+        "form": form,
+    })
+
+
+@login_required
+def document_download(request, pk, *args):
+    document = get_object_or_404(SupportingDocument, pk=pk)
+    if getattr(settings, "USE_X_ACCEL_REDIRECT", False):
+        response = HttpResponse()
+        response["X-Accel-Redirect"] = document.file.url
+        # delete content-type to allow Gondor to determine the filetype and
+        # we definitely don't want Django's crappy default :-)
+        del response["content-type"]
+    else:
+        response = static.serve(
+            request,
+            document.file.name,
+            document_root=settings.MEDIA_ROOT
+        )
+    return response
+
+
+@login_required
+def document_delete(request, pk):
+    document = get_object_or_404(
+        SupportingDocument,
+        pk=pk,
+        uploaded_by=request.user
+    )
+    if request.method == "POST":
+        document.delete()
+    return redirect("submission_detail", document.submission.pk)
