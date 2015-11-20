@@ -394,17 +394,17 @@ class ReviewDelete(LoggedInMixin, CanReviewMixin, DeleteView):
         return redirect(self.success_url, pk=self.object.submission.pk)
 
 
-@login_required
-def review_assignments(request):
-    if not request.user.groups.filter(name="reviewers").exists():
-        return access_not_permitted(request)
-    assignments = ReviewAssignment.objects.filter(
-        user=request.user,
-        opted_out=False
-    )
-    return render(request, "pinax/submissions/review_assignment.html", {
-        "assignments": assignments,
-    })
+class ReviewAssignments(LoggedInMixin, CanReviewMixin, DetailView):
+
+    template_name = "pinax/submissions/review_assignment.html"
+    context_object_name = 'assignments'
+
+    def get_queryset(self):
+        assignments = ReviewAssignment.objects.filter(
+            user=self.request.user,
+            opted_out=False
+        )
+        return assignments
 
 
 @login_required

@@ -108,7 +108,7 @@ urlpatterns = patterns(
     ),
     url(
         r"^assignments/$",
-        views.review_assignments,
+        views.ReviewAssignments.as_view(),
         name="review_assignments"
     ),
     url(
