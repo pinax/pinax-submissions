@@ -126,7 +126,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(serialize=False, verbose_name='ID', primary_key=True, auto_created=True)),
                 ('created_at', models.DateTimeField(default=django.utils.timezone.now, verbose_name='Created at')),
-                ('document', models.FileField(verbose_name='Document', upload_to=pinax.submissions.utils.uuid_filename)),
+                ('document', models.FileField(verbose_name='Document', upload_to=pinax.submissions.models.uuid_filename)),
                 ('description', models.CharField(verbose_name='Description', max_length=140)),
                 ('submission', models.ForeignKey(to='submissions.SubmissionBase', related_name='supporting_documents', verbose_name='Submission')),
                 ('uploaded_by', models.ForeignKey(to=settings.AUTH_USER_MODEL, verbose_name='Uploaded by')),
