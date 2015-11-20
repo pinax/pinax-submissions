@@ -17,7 +17,8 @@ from django.views.generic import (
     ListView,
     UpdateView,
     FormView,
-    DetailView
+    DetailView,
+    DeleteView
 )
 from django.views.decorators.http import require_POST
 
@@ -383,17 +384,14 @@ class ReviewDetail(LoggedInMixin, CanReviewMixin, DetailView):
         return context
 
 
-@login_required
-@require_POST
-def review_delete(request, pk):
-    review = get_object_or_404(Review, pk=pk)
+class ReviewDelete(LoggedInMixin, CanReviewMixin, DeleteView):
+    model = Review
+    success_url = 'submission_detail'
 
-    if not request.user.has_perm("reviews.can_manage"):
-        return access_not_permitted(request)
-
-    review.delete()
-
-    return redirect("submission_detail", pk=review.submission.pk)
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        self.object.delete()
+        return redirect(self.success_url, pk=self.object.submission.pk)
 
 
 @login_required

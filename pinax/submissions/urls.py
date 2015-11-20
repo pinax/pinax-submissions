@@ -103,7 +103,7 @@ urlpatterns = patterns(
 
     url(
         r"^reviews(?P<pk>\d+)/delete/$",
-        views.review_delete,
+        views.ReviewDelete.as_view(),
         name="review_delete"
     ),
     url(
