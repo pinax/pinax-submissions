@@ -347,9 +347,10 @@ class ReviewDetail(LoggedInMixin, CanReviewMixin, DetailView):
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         admin = self.request.user.is_staff
+        message_form = SubmitterCommentForm(self.request.POST)
         if "message_submit" in request.POST:
             if message_form.is_valid():
-                return self.form_valid(form)
+                return self.form_valid(message_form)
         elif "result_submit" in request.POST:
             if admin:
                 result = request.POST["result_submit"]
@@ -357,11 +358,11 @@ class ReviewDetail(LoggedInMixin, CanReviewMixin, DetailView):
             return redirect(request.path)
 
     def form_valid(self, form):
-        message = message_form.save(commit=False)
+        message = form.save(commit=False)
         message.user = self.request.user
         message.submission = self.object
         message.save()
-        return redirect(request.path)
+        return redirect(self.request.path)
 
     def form_invalid(self, form):
         initial = {}
