@@ -48,7 +48,8 @@ from .models import (
 )
 from .utils import (
     LoggedInMixin,
-    CanReviewMixin
+    CanReviewMixin,
+    submissions_generator
 )
 
 
@@ -315,56 +316,49 @@ def access_not_permitted(request):
     return render(request, "pinax/submissions/access_not_permitted.html")
 
 
-def submissions_generator(request, queryset, user_pk=None):
+class Review(LoggedInMixin, CanReviewMixin, ListView):
+    """
+    Returns a list of all proposals, proposals reviewed by the user, or the
+    proposals the user has yet to review depending on the link user clicks in
+    dashboard
 
-    for obj in queryset:
-        SubmissionResult.objects.get_or_create(submission=obj)
-        lookup_params = dict(submission=obj)
-        if user_pk:
-            lookup_params["user__pk"] = user_pk
-        else:
-            lookup_params["user"] = request.user
-        yield obj
+    """
 
-
-# Returns a list of all proposals, proposals reviewed by the user, or the
-# proposals the user has yet to review depending on the link user clicks in
-# dashboard
-@login_required
-def review(request, assigned=False, reviewed="all"):
-
-    if not request.user.has_perm("reviews.can_review_submissions"):
-        return access_not_permitted(request)
-
+    template_name = "pinax/submissions/review_list.html"
+    assigned = False
+    reviewed = 'all'
+    context_object_name = 'submissions'
     queryset = SubmissionBase.objects.all()
 
-    if assigned:
-        assignments = ReviewAssignment.objects.filter(
-            user=request.user
-        ).values_list("proposal__id")
-        queryset = queryset.filter(id__in=assignments)
+    def get_context_data(self, **kwargs):
+        context = super(Review, self).get_context_data(**kwargs)
+        queryset = self.queryset
 
-    # passing reviewed in from reviews.urls and out to review_list for
-    # appropriate template header rendering
-    if reviewed == "all":
-        queryset = queryset.select_related("result").select_subclasses()
-        reviewed = "all_reviews"
-    elif reviewed == "reviewed":
-        queryset = queryset.filter(reviews__user=request.user)
-        reviewed = "user_reviewed"
-    else:
-        queryset = queryset.exclude(
-            reviews__user=request.user).exclude(submitter=request.user)
-        reviewed = "user_not_reviewed"
+        if self.assigned:
+            assignments = ReviewAssignment.objects.filter(
+                user=request.user
+            ).values_list("submission__id")
+            queryset = queryset.filter(id__in=assignments)
 
-    submissions = submissions_generator(request, queryset)
+        # passing reviewed in from reviews.urls and out to review_list for
+        # appropriate template header rendering
+        if self.reviewed == "all":
+            queryset = queryset.select_related("result").select_subclasses()
+            reviewed = "all_reviews"
+        elif self.reviewed == "reviewed":
+            queryset = queryset.filter(reviews__user=request.user)
+            reviewed = "user_reviewed"
+        else:
+            queryset = queryset.exclude(
+                reviews__user=request.user).exclude(submitter=request.user)
+            reviewed = "user_not_reviewed"
 
-    ctx = {
-        "submissions": submissions,
-        "reviewed": reviewed,
-    }
+        submissions = submissions_generator(self.request, queryset)
 
-    return render(request, "pinax/submissions/review_list.html", ctx)
+        context['reviewed'] = reviewed
+        context['submissions'] = submissions
+
+        return context
 
 
 class ReviewList(LoggedInMixin, CanReviewMixin, ListView):

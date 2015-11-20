@@ -48,7 +48,7 @@ urlpatterns = patterns(
 
     url(
         r"^all/$",
-        views.review,
+        views.Review.as_view(),
         {"reviewed": "all"},
         name="review_section"
     ),
