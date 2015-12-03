@@ -2,10 +2,24 @@ from __future__ import unicode_literals
 
 from django.core.mail import send_mass_mail
 from django.db.models import Q
-from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseBadRequest, HttpResponseNotAllowed
+from django.http import (
+    Http404,
+    HttpResponse,
+    HttpResponseForbidden,
+    HttpResponseBadRequest,
+    HttpResponseNotAllowed,
+    HttpResponseRedirect
+)
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template import Context, Template
 from django.views import static
+from django.views.generic import (
+    ListView,
+    UpdateView,
+    FormView,
+    DetailView,
+    DeleteView
+)
 from django.views.decorators.http import require_POST
 
 from django.contrib import messages
@@ -33,381 +47,393 @@ from .models import (
     SubmissionResult,
     SupportingDocument
 )
+from .utils import (
+    LoggedInMixin,
+    CanReviewMixin,
+    submissions_generator
+)
 
 
-# ******* symposion.proposals.views ******
+class SubmissionKindList(LoggedInMixin, ListView):
+    """
+    ListView to provide a list of submission kinds to choose from.
+
+    """
+
+    template_name = 'pinax/submissions/submission_submit.html'
+    context_object_name = 'kinds'
+
+    def get_queryset(self):
+        return SubmissionKind.objects.all()
 
 
-def submission_submit(request):
-    if not request.user.is_authenticated():
-        messages.info(request, _("To submit a submission, please "
-                                 "<a href='{0}'>log in</a> and create a speaker profile "
-                                 "via the dashboard.".format(settings.LOGIN_URL)))
-        return redirect("home")  # @@@ unauth'd speaker info page?
-    return render(request, "pinax/submissions/submission_submit.html", {
-        "kinds": SubmissionKind.objects.all(),
-    })
+class SubmissionAdd(LoggedInMixin, FormView):
+    template_name = 'pinax/submissions/submission_submit_kind.html'
+    success_url = '/dashboard/'
+
+    def get_form_class(self):
+        return settings.PINAX_SUBMISSIONS_FORMS[self.kwargs['kind_slug']]
+
+    def get_context_data(self, **kwargs):
+        kind_slug = self.kwargs['kind_slug']
+        kind = get_object_or_404(SubmissionKind, slug=kind_slug)
+
+        return super(SubmissionAdd, self).get_context_data(
+            kind=kind,
+            kind_slug=kind_slug,
+            proposal_form=self.get_form_class(),
+            **kwargs)
+
+    def form_valid(self, form):
+        ctx = self.get_context_data()
+        submission = form.save(commit=False)
+        submission.submitter = self.request.user
+        submission.kind = ctx.get('kind')
+        submission.save()
+        form.save_m2m()
+        messages.success(self.request, _("Submission submitted."))
+        return HttpResponseRedirect(self.success_url)
+
+    def form_invalid(self, form):
+        # @@@|TODO change this message
+        messages.success(self.request, _("Form failed."))
+        context = self.get_context_data()
+        context['proposal_form'] = form
+        return self.render_to_response(context)
 
 
-def submission_submit_kind(request, kind_slug):
+class SubmissionEdit(LoggedInMixin, UpdateView):
 
-    kind = get_object_or_404(SubmissionKind, slug=kind_slug)
+    template_name = "pinax/submissions/submission_edit.html"
+    # @@@|TODO change url
+    success_url = '/dashboard/'
 
-    if not request.user.is_authenticated():
-        return redirect("home")  # @@@ unauth'd speaker info page?
+    def get_object(self):
+        pk = self.kwargs.get(self.pk_url_kwarg, None)
+        submission = get_object_or_404(SubmissionBase, pk=pk)
+        submission = SubmissionBase.objects.get_subclass(pk=submission.pk)
 
-    SubmissionForm = settings.PINAX_SUBMISSIONS_FORMS[kind_slug]
+        if self.request.user != submission.submitter:
+            raise Http404()
 
-    if request.method == "POST":
-        form = SubmissionForm(request.POST)
-        if form.is_valid():
-            submission = form.save(commit=False)
-            submission.submitter = request.user
-            submission.kind = kind
-            submission.save()
-            form.save_m2m()
-            messages.success(request, _("Submission submitted."))
-            return redirect("dashboard")
-    else:
-        form = SubmissionForm()
-
-    return render(request, "pinax/submissions/submission_submit_kind.html", {
-        "kind": kind,
-        "proposal_form": form,
-    })
-
-
-@login_required
-def submission_edit(request, pk):
-    submission = get_object_or_404(SubmissionBase, pk=pk)
-    submission = SubmissionBase.objects.get_subclass(pk=submission.pk)
-
-    if request.user != submission.submitter:
-        raise Http404()
-
-    if not submission.can_edit():
-        ctx = {
-            "title": "Submission editing closed",
-            "body": "Submission editing is closed for this session type."
-        }
-        return render(request, "pinax/submissions/submission_error.html", ctx)
-
-    FormClass = settings.PINAX_SUBMISSIONS_FORMS[submission.kind.slug]
-
-    if request.method == "POST":
-        form = FormClass(request.POST, instance=submission)
-        if form.is_valid():
-            form.save()
-            if hasattr(submission, "reviews"):
-                users = User.objects.filter(
-                    Q(review__submission=submission) |
-                    Q(submissionmessage__submission=submission)
-                )
-                users = users.exclude(pk=request.user.pk).distinct()
-                for user in users:
-                    ctx = {
-                        "user": request.user,
-                        "submission": submission,
-                    }
-                    hookset.send_email(
-                        [user.email],
-                        "submission_updated",
-                        context=ctx
-                    )
-            messages.success(request, "Submission updated.")
-            return redirect("submission_detail", submission.pk)
-    else:
-        form = FormClass(instance=submission)
-
-    return render(request, "pinax/submissions/submission_edit.html", {
-        "submission": submission,
-        "form": form,
-    })
-
-
-@login_required
-def submission_detail(request, pk):
-    submission = get_object_or_404(SubmissionBase, pk=pk, submitter=request.user)
-    submission = SubmissionBase.objects.get_subclass(pk=submission.pk)
-
-    message_form = SubmitterCommentForm()
-    if request.method == "POST":
-        message_form = SubmitterCommentForm(request.POST)
-        if message_form.is_valid():
-            message = message_form.save(commit=False)
-            message.user = request.user
-            message.submission = submission
-            message.save()
-
-            reviewers = User.objects.filter(
-                id__in=SubmissionMessage.objects.filter(
-                    submission=submission
-                ).exclude(
-                    user=request.user
-                ).distinct().values_list("user", flat=True)
+        if not submission.can_edit():
+            ctx = {
+                "title": "Submission editing closed",
+                "body": "Submission editing is closed for this session type."
+            }
+            return render(
+                self.request,
+                "pinax/submissions/submission_error.html",
+                ctx
             )
+        return submission
 
-            for reviewer in reviewers:
+    def get_form_class(self):
+        return settings.PINAX_SUBMISSIONS_FORMS[self.get_object().kind.slug]
+
+    def get_context_data(self, **kwargs):
+        return super(SubmissionEdit, self).get_context_data(
+            submission=self.get_object(),
+            **kwargs)
+
+    def form_valid(self, form):
+        submission = self.get_object()
+        form.save()
+        if hasattr(submission, "reviews"):
+            users = User.objects.filter(
+                Q(review__submission=submission) |
+                Q(submissionmessage__submission=submission)
+            )
+            users = users.exclude(pk=self.request.user.pk).distinct()
+            for user in users:
                 ctx = {
+                    "user": self.request.user,
                     "submission": submission,
-                    "message": message,
-                    "reviewer": True,
                 }
                 hookset.send_email(
-                    [reviewer.email],
-                    "submission_new_message",
+                    [user.email],
+                    "submission_updated",
                     context=ctx
                 )
-
-            return redirect(request.path)
-    else:
-        message_form = SubmitterCommentForm()
-
-    return render(request, "pinax/submissions/submission_detail.html", {
-        "submission": submission,
-        "message_form": message_form
-    })
+        messages.success(self.request, "Submission updated.")
+        return HttpResponseRedirect(self.success_url)
 
 
-@login_required
-def submission_cancel(request, pk):
-    submission = get_object_or_404(SubmissionBase, pk=pk, submitter=request.user)
-    submission = SubmissionBase.objects.get_subclass(pk=submission.pk)
+class SubmissionDetail(LoggedInMixin, DetailView):
 
-    if request.method == "POST":
+    template_name = "pinax/submissions/submission_detail.html"
+
+    def get_object(self, queryset=None):
+        pk = self.kwargs.get(self.pk_url_kwarg, None)
+        submission = get_object_or_404(
+            SubmissionBase,
+            pk=pk,
+            submitter=self.request.user
+        )
+        submission = SubmissionBase.objects.get_subclass(pk=submission.pk)
+        return submission
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        form = SubmitterCommentForm(self.request.POST)
+
+        if form.is_valid():
+            return self.form_valid(form)
+        return self.form_invalid(form)
+
+    def form_valid(self, form):
+        submission = self.get_object()
+        message = form.save(commit=False)
+        message.user = self.request.user
+        message.submission = submission
+        message.save()
+
+        reviewers = User.objects.filter(
+            id__in=SubmissionMessage.objects.filter(
+                submission=submission
+            ).exclude(
+                user=self.request.user
+            ).distinct().values_list("user", flat=True)
+        )
+
+        for reviewer in reviewers:
+            ctx = {
+                "submission": submission,
+                "message": message,
+                "reviewer": True,
+            }
+            hookset.send_email(
+                [reviewer.email],
+                "submission_new_message",
+                context=ctx
+            )
+
+        return redirect(self.request.path)
+
+    def form_invalid(self, form):
+        messages.success(self.request, _("Comment Form failed."))
+        return self.render_to_response(
+            self.get_context_data(message_form=form))
+
+    def get_context_data(self, **kwargs):
+        context = super(SubmissionDetail, self).get_context_data(**kwargs)
+        self.object = self.get_object()
+        context['submission'] = self.object
+        context['message_form'] = SubmitterCommentForm(instance=self.object)
+        return context
+
+
+class SubmissionCancel(LoggedInMixin, DetailView):
+
+    template_name = "pinax/submissions/submission_cancel.html"
+
+    def get_object(self, queryset=None):
+        pk = self.kwargs.get(self.pk_url_kwarg, None)
+        submission = get_object_or_404(
+            SubmissionBase,
+            pk=pk,
+            submitter=self.request.user
+        )
+        submission = SubmissionBase.objects.get_subclass(pk=submission.pk)
+        return submission
+
+    def post(self, request, *args, **kwargs):
+        submission = self.get_object()
         submission.cancel()
-        # @@@ fire off email to submitter and other speakers
+        # @@@|TODO fire off email to submitter and other speakers
         messages.success(request, "Submission has been cancelled")
         return redirect("dashboard")
 
-    return render(request, "pinax/submissions/submission_cancel.html", {
-        "submission": submission,
-    })
+    def get_context_data(self, **kwargs):
+        context = super(SubmissionCancel, self).get_context_data(**kwargs)
+        self.object = self.get_object()
+        context['submission'] = self.object
+        return context
 
 
-@login_required
-def document_create(request, proposal_pk):
-    submission = get_object_or_404(SubmissionBase, pk=proposal_pk, submitter=request.user)
-    submission = SubmissionBase.objects.get_subclass(pk=submission.pk)
-
-    if submission.cancelled:
-        return HttpResponseForbidden()
-
-    if request.method == "POST":
-        form = SupportingDocumentCreateForm(request.POST, request.FILES)
-        if form.is_valid():
-            document = form.save(commit=False)
-            document.submission = submission
-            document.uploaded_by = request.user
-            document.save()
-            return redirect("submission_detail", submission.pk)
-    else:
-        form = SupportingDocumentCreateForm()
-
-    return render(request, "pinax/submissions/document_create.html", {
-        "submission": submission,
-        "form": form,
-    })
-
-
-@login_required
-def document_download(request, pk, *args):
-    document = get_object_or_404(SupportingDocument, pk=pk)
-    if getattr(settings, "USE_X_ACCEL_REDIRECT", False):
-        response = HttpResponse()
-        response["X-Accel-Redirect"] = document.file.url
-        # delete content-type to allow Gondor to determine the filetype and
-        # we definitely don't want Django's crappy default :-)
-        del response["content-type"]
-    else:
-        response = static.serve(request, document.file.name, document_root=settings.MEDIA_ROOT)
-    return response
-
-
-@login_required
-def document_delete(request, pk):
-    document = get_object_or_404(SupportingDocument, pk=pk, uploaded_by=request.user)
-    if request.method == "POST":
-        document.delete()
-    return redirect("submission_detail", document.submission.pk)
-
-
-# ***** symposion.reviews.views *******
+# REVIEW VIEWS ################################################################
 
 
 def access_not_permitted(request):
     return render(request, "pinax/submissions/access_not_permitted.html")
 
 
-def submissions_generator(request, queryset, user_pk=None):
+class Reviews(LoggedInMixin, CanReviewMixin, ListView):
+    """
+    Returns a list of all proposals, proposals reviewed by the user, or the
+    proposals the user has yet to review depending on the link user clicks in
+    dashboard
 
-    for obj in queryset:
-        SubmissionResult.objects.get_or_create(submission=obj)
-        lookup_params = dict(submission=obj)
-        if user_pk:
-            lookup_params["user__pk"] = user_pk
-        else:
-            lookup_params["user"] = request.user
-        yield obj
+    """
 
-
-# Returns a list of all proposals, proposals reviewed by the user, or the proposals the user has
-# yet to review depending on the link user clicks in dashboard
-@login_required
-def review(request, assigned=False, reviewed="all"):
-
-    if not request.user.has_perm("reviews.can_review_submissions"):
-        return access_not_permitted(request)
-
+    template_name = "pinax/submissions/review_list.html"
+    assigned = False
+    reviewed = 'all'
+    context_object_name = 'submissions'
     queryset = SubmissionBase.objects.all()
 
-    if assigned:
-        assignments = ReviewAssignment.objects.filter(
-            user=request.user
-        ).values_list("proposal__id")
-        queryset = queryset.filter(id__in=assignments)
+    def get_context_data(self, **kwargs):
+        context = super(Reviews, self).get_context_data(**kwargs)
+        queryset = self.queryset
 
-    # passing reviewed in from reviews.urls and out to review_list for
-    # appropriate template header rendering
-    if reviewed == "all":
-        queryset = queryset.select_related("result").select_subclasses()
-        reviewed = "all_reviews"
-    elif reviewed == "reviewed":
-        queryset = queryset.filter(reviews__user=request.user)
-        reviewed = "user_reviewed"
-    else:
-        queryset = queryset.exclude(reviews__user=request.user).exclude(submitter=request.user)
-        reviewed = "user_not_reviewed"
+        if self.assigned:
+            assignments = ReviewAssignment.objects.filter(
+                user=request.user
+            ).values_list("submission__id")
+            queryset = queryset.filter(id__in=assignments)
 
-    submissions = submissions_generator(request, queryset)
+        # passing reviewed in from reviews.urls and out to review_list for
+        # appropriate template header rendering
+        if self.reviewed == "all":
+            queryset = queryset.select_related("result").select_subclasses()
+            reviewed = "all_reviews"
+        elif self.reviewed == "reviewed":
+            queryset = queryset.filter(reviews__user=request.user)
+            reviewed = "user_reviewed"
+        else:
+            queryset = queryset.exclude(
+                reviews__user=request.user).exclude(submitter=request.user)
+            reviewed = "user_not_reviewed"
 
-    ctx = {
-        "submissions": submissions,
-        "reviewed": reviewed,
-    }
+        submissions = submissions_generator(self.request, queryset)
 
-    return render(request, "pinax/submissions/review_list.html", ctx)
+        context['reviewed'] = reviewed
+        context['submissions'] = submissions
 
-
-@login_required
-def review_list(request, user_pk):
-
-    # if they're not a reviewer admin and they aren't the person whose
-    # review list is being asked for, don't let them in
-    if not request.user.has_perm("reviews.can_manage"):
-        if not request.user.pk == user_pk:
-            return access_not_permitted(request)
-
-    queryset = SubmissionBase.objects.select_related("result")
-    reviewed = Review.objects.filter(user__pk=user_pk).values_list("submission", flat=True)
-    queryset = queryset.filter(pk__in=reviewed)
-    submissions = queryset.order_by("submitted")
-    submissions = submissions_generator(request, submissions, user_pk=user_pk)
-
-    ctx = {
-        "submissions": submissions,
-    }
-    return render(request, "pinax/submissions/review_list.html", ctx)
+        return context
 
 
-@login_required
-def review_admin(request):
-    if not request.user.has_perm("reviews.can_manage"):
-        return access_not_permitted(request)
+class ReviewList(LoggedInMixin, CanReviewMixin, ListView):
 
-    ctx = {
-        "reviewers": hookset.reviewers(),
-    }
-    return render(request, "pinax/submissions/review_admin.html", ctx)
+    template_name = 'pinax/submissions/review_list.html'
+    context_object_name = 'submissions'
+
+    def get_queryset(self):
+        queryset = SubmissionBase.objects.select_related("result")
+        reviewed = Review.objects.filter(
+            user__pk=self.kwargs['user_pk']
+            ).values_list("submission", flat=True)
+        queryset = queryset.filter(pk__in=reviewed)
+        submissions = queryset.order_by("submitted")
+        submissions = submissions_generator(
+            self.request,
+            submissions,
+            user_pk=self.kwargs['user_pk']
+        )
+
+        return submissions
 
 
-@login_required
-def review_detail(request, pk):
-    submissions = SubmissionBase.objects.select_related("result").select_subclasses()
-    submission = get_object_or_404(submissions, pk=pk)
+class ReviewAdmin(LoggedInMixin, CanReviewMixin, ListView):
 
-    if not request.user.has_perm("reviews.can_review"):
-        return access_not_permitted(request)
+    template_name = 'pinax/submissions/review_admin.html'
+    context_object_name = 'reviewers'
 
-    admin = request.user.is_staff
+    def get_queryset(self):
+        return hookset.reviewers()
 
-    if request.method == "POST":
+
+class ReviewDetail(LoggedInMixin, CanReviewMixin, DetailView):
+
+    template_name = "pinax/submissions/review_detail.html"
+
+    def get_object(self, queryset=None):
+        pk = self.kwargs.get(self.pk_url_kwarg, None)
+        submissions = SubmissionBase.objects.\
+            select_related("result").select_subclasses()
+        submission = get_object_or_404(submissions, pk=pk)
+        return submission
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        admin = self.request.user.is_staff
+        message_form = SubmitterCommentForm(self.request.POST)
         if "message_submit" in request.POST:
-            message_form = SubmitterCommentForm(request.POST)
             if message_form.is_valid():
-                message = message_form.save(commit=False)
-                message.user = request.user
-                message.submission = submission
-                message.save()
-                return redirect(request.path)
-            else:
-                initial = {}
-                review_form = ReviewForm(initial=initial)
+                return self.form_valid(message_form)
         elif "result_submit" in request.POST:
             if admin:
                 result = request.POST["result_submit"]
-                submission.update_result(result)
+                self.object.update_result(result)
             return redirect(request.path)
-    else:
+
+    def form_valid(self, form):
+        message = form.save(commit=False)
+        message.user = self.request.user
+        message.submission = self.object
+        message.save()
+        return redirect(self.request.path)
+
+    def form_invalid(self, form):
         initial = {}
         review_form = ReviewForm(initial=initial)
-        message_form = SubmitterCommentForm()
+        return self.render_to_response(
+            self.get_context_data(review_form=review_form))
 
-    reviews = Review.objects.filter(submission=submission).order_by("-submitted_at")
-    messages = submission.messages.order_by("submitted_at")
+    def get_context_data(self, **kwargs):
+        context = super(ReviewDetail, self).get_context_data(**kwargs)
+        submission = self.get_object()
+        reviews = Review.objects.filter(
+            submission=submission).order_by("-submitted_at")
+        messages = submission.messages.order_by("submitted_at")
 
-    return render(request, "pinax/submissions/review_detail.html", {
-        "submission": submission,
-        "reviews": reviews,
-        "review_messages": messages,
-        "review_form": review_form,
-        "message_form": message_form
-    })
-
-
-@login_required
-@require_POST
-def review_delete(request, pk):
-    review = get_object_or_404(Review, pk=pk)
-
-    if not request.user.has_perm("reviews.can_manage"):
-        return access_not_permitted(request)
-
-    review.delete()
-
-    return redirect("submission_detail", pk=review.submission.pk)
+        context["submission"] = submission
+        context["reviews"] = reviews
+        context["review_messages"] = messages
+        context["review_form"] = ReviewForm(initial={})
+        context["message_form"] = SubmitterCommentForm()
+        return context
 
 
-@login_required
-def review_assignments(request):
-    if not request.user.groups.filter(name="reviewers").exists():
-        return access_not_permitted(request)
-    assignments = ReviewAssignment.objects.filter(
-        user=request.user,
-        opted_out=False
-    )
-    return render(request, "pinax/submissions/review_assignment.html", {
-        "assignments": assignments,
-    })
+class ReviewDelete(LoggedInMixin, CanReviewMixin, DeleteView):
+    model = Review
+    success_url = 'submission_detail'
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        self.object.delete()
+        return redirect(self.success_url, pk=self.object.submission.pk)
+
+
+class ReviewAssignments(LoggedInMixin, CanReviewMixin, DetailView):
+
+    template_name = "pinax/submissions/review_assignment.html"
+    context_object_name = 'assignments'
+
+    def get_queryset(self):
+        assignments = ReviewAssignment.objects.filter(
+            user=self.request.user,
+            opted_out=False
+        )
+        return assignments
 
 
 @login_required
 @require_POST
 def review_assignment_opt_out(request, pk):
-    review_assignment = get_object_or_404(ReviewAssignment, pk=pk, user=request.user)
+    review_assignment = get_object_or_404(
+        ReviewAssignment,
+        pk=pk,
+        user=request.user
+    )
     if not review_assignment.opted_out:
         review_assignment.opted_out = True
         review_assignment.save()
-        ReviewAssignment.create_assignments(review_assignment.proposal, origin=ReviewAssignment.AUTO_ASSIGNED_LATER)
+        ReviewAssignment.create_assignments(
+            review_assignment.proposal,
+            origin=ReviewAssignment.AUTO_ASSIGNED_LATER
+        )
     return redirect("review_assignments")
 
+# RESULT NOTIFICATION VIEWS ###################################################
 
 @login_required
 def result_notification(request, status):
     if not request.user.has_perm("reviews.can_manage"):
         return access_not_permitted(request)
 
-    submissions = SubmissionBase.objects.filter(result__status=status).select_related("result").select_subclasses()
+    submissions = SubmissionBase.objects.filter(
+        result__status=status).select_related("result").select_subclasses()
     notification_templates = NotificationTemplate.objects.all()
 
     ctx = {
@@ -441,7 +467,8 @@ def result_notification_prepare(request, status):
 
     notification_template_pk = request.POST.get("notification_template", "")
     if notification_template_pk:
-        notification_template = NotificationTemplate.objects.get(pk=notification_template_pk)
+        notification_template = NotificationTemplate.objects.get(
+            pk=notification_template_pk)
     else:
         notification_template = None
 
@@ -451,7 +478,11 @@ def result_notification_prepare(request, status):
         "submissions": submissions,
         "submission_pks": ",".join([str(pk) for pk in submission_pks]),
     }
-    return render(request, "pinax/submissions/result_notification_prepare.html", ctx)
+    return render(
+        request,
+        "pinax/submissions/result_notification_prepare.html",
+        ctx
+    )
 
 
 @login_required
@@ -462,7 +493,8 @@ def result_notification_send(request, status):
     if not request.user.has_perm("reviews.can_manage"):
         return access_not_permitted(request)
 
-    if not all([k in request.POST for k in ["submission_pks", "from_address", "subject", "body"]]):
+    if not all([k in request.POST for k in ["submission_pks", "from_address",
+                                            "subject", "body"]]):
         return HttpResponseBadRequest()
 
     try:
@@ -479,7 +511,8 @@ def result_notification_send(request, status):
 
     notification_template_pk = request.POST.get("notification_template", "")
     if notification_template_pk:
-        notification_template = NotificationTemplate.objects.get(pk=notification_template_pk)
+        notification_template = NotificationTemplate.objects.get(
+            pk=notification_template_pk)
     else:
         notification_template = None
 
@@ -503,3 +536,65 @@ def result_notification_send(request, status):
     send_mass_mail(emails)
 
     return redirect("result_notification", status=status)
+
+
+# DOCUMENT VIEWS #############################################################
+# @@@|TODO write class-based views for these
+
+@login_required
+def document_create(request, proposal_pk):
+    submission = get_object_or_404(
+        SubmissionBase,
+        pk=proposal_pk,
+        submitter=request.user
+    )
+    submission = SubmissionBase.objects.get_subclass(pk=submission.pk)
+
+    if submission.cancelled:
+        return HttpResponseForbidden()
+
+    if request.method == "POST":
+        form = SupportingDocumentCreateForm(request.POST, request.FILES)
+        if form.is_valid():
+            document = form.save(commit=False)
+            document.submission = submission
+            document.uploaded_by = request.user
+            document.save()
+            return redirect("submission_detail", submission.pk)
+    else:
+        form = SupportingDocumentCreateForm()
+
+    return render(request, "pinax/submissions/document_create.html", {
+        "submission": submission,
+        "form": form,
+    })
+
+
+@login_required
+def document_download(request, pk, *args):
+    document = get_object_or_404(SupportingDocument, pk=pk)
+    if getattr(settings, "USE_X_ACCEL_REDIRECT", False):
+        response = HttpResponse()
+        response["X-Accel-Redirect"] = document.file.url
+        # delete content-type to allow Gondor to determine the filetype and
+        # we definitely don't want Django's crappy default :-)
+        del response["content-type"]
+    else:
+        response = static.serve(
+            request,
+            document.file.name,
+            document_root=settings.MEDIA_ROOT
+        )
+    return response
+
+
+@login_required
+def document_delete(request, pk):
+    document = get_object_or_404(
+        SupportingDocument,
+        pk=pk,
+        uploaded_by=request.user
+    )
+    if request.method == "POST":
+        document.delete()
+    return redirect("submission_detail", document.submission.pk)
