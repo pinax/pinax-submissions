@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 import os
+import uuid
 
 from django.conf import settings
 from django.core.urlresolvers import reverse

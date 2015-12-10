@@ -44,7 +44,6 @@ from .models import (
     SubmissionBase,
     SubmissionKind,
     SubmissionMessage,
-    SubmissionResult,
     SupportingDocument
 )
 from .utils import (
@@ -60,22 +59,22 @@ class SubmissionKindList(LoggedInMixin, ListView):
 
     """
 
-    template_name = 'pinax/submissions/submission_submit.html'
-    context_object_name = 'kinds'
+    template_name = "pinax/submissions/submission_submit.html"
+    context_object_name = "kinds"
 
     def get_queryset(self):
         return SubmissionKind.objects.all()
 
 
 class SubmissionAdd(LoggedInMixin, FormView):
-    template_name = 'pinax/submissions/submission_submit_kind.html'
-    success_url = '/dashboard/'
+    template_name = "pinax/submissions/submission_submit_kind.html"
+    success_url = "/dashboard/"
 
     def get_form_class(self):
-        return settings.PINAX_SUBMISSIONS_FORMS[self.kwargs['kind_slug']]
+        return settings.PINAX_SUBMISSIONS_FORMS[self.kwargs["kind_slug"]]
 
     def get_context_data(self, **kwargs):
-        kind_slug = self.kwargs['kind_slug']
+        kind_slug = self.kwargs["kind_slug"]
         kind = get_object_or_404(SubmissionKind, slug=kind_slug)
 
         return super(SubmissionAdd, self).get_context_data(
@@ -88,7 +87,7 @@ class SubmissionAdd(LoggedInMixin, FormView):
         ctx = self.get_context_data()
         submission = form.save(commit=False)
         submission.submitter = self.request.user
-        submission.kind = ctx.get('kind')
+        submission.kind = ctx.get("kind")
         submission.save()
         form.save_m2m()
         messages.success(self.request, _("Submission submitted."))
@@ -98,7 +97,7 @@ class SubmissionAdd(LoggedInMixin, FormView):
         # @@@|TODO change this message
         messages.success(self.request, _("Form failed."))
         context = self.get_context_data()
-        context['proposal_form'] = form
+        context["proposal_form"] = form
         return self.render_to_response(context)
 
 
@@ -106,7 +105,7 @@ class SubmissionEdit(LoggedInMixin, UpdateView):
 
     template_name = "pinax/submissions/submission_edit.html"
     # @@@|TODO change url
-    success_url = '/dashboard/'
+    success_url = "/dashboard/"
 
     def get_object(self):
         pk = self.kwargs.get(self.pk_url_kwarg, None)
@@ -218,8 +217,8 @@ class SubmissionDetail(LoggedInMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super(SubmissionDetail, self).get_context_data(**kwargs)
         self.object = self.get_object()
-        context['submission'] = self.object
-        context['message_form'] = SubmitterCommentForm(instance=self.object)
+        context["submission"] = self.object
+        context["message_form"] = SubmitterCommentForm(instance=self.object)
         return context
 
 
@@ -247,7 +246,7 @@ class SubmissionCancel(LoggedInMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super(SubmissionCancel, self).get_context_data(**kwargs)
         self.object = self.get_object()
-        context['submission'] = self.object
+        context["submission"] = self.object
         return context
 
 
@@ -268,8 +267,8 @@ class Reviews(LoggedInMixin, CanReviewMixin, ListView):
 
     template_name = "pinax/submissions/review_list.html"
     assigned = False
-    reviewed = 'all'
-    context_object_name = 'submissions'
+    reviewed = "all"
+    context_object_name = "submissions"
     queryset = SubmissionBase.objects.all()
 
     def get_context_data(self, **kwargs):
@@ -278,7 +277,7 @@ class Reviews(LoggedInMixin, CanReviewMixin, ListView):
 
         if self.assigned:
             assignments = ReviewAssignment.objects.filter(
-                user=request.user
+                user=self.request.user
             ).values_list("submission__id")
             queryset = queryset.filter(id__in=assignments)
 
@@ -288,37 +287,37 @@ class Reviews(LoggedInMixin, CanReviewMixin, ListView):
             queryset = queryset.select_related("result").select_subclasses()
             reviewed = "all_reviews"
         elif self.reviewed == "reviewed":
-            queryset = queryset.filter(reviews__user=request.user)
+            queryset = queryset.filter(reviews__user=self.request.user)
             reviewed = "user_reviewed"
         else:
             queryset = queryset.exclude(
-                reviews__user=request.user).exclude(submitter=request.user)
+                reviews__user=self.request.user).exclude(submitter=self.request.user)
             reviewed = "user_not_reviewed"
 
         submissions = submissions_generator(self.request, queryset)
 
-        context['reviewed'] = reviewed
-        context['submissions'] = submissions
+        context["reviewed"] = reviewed
+        context["submissions"] = submissions
 
         return context
 
 
 class ReviewList(LoggedInMixin, CanReviewMixin, ListView):
 
-    template_name = 'pinax/submissions/review_list.html'
-    context_object_name = 'submissions'
+    template_name = "pinax/submissions/review_list.html"
+    context_object_name = "submissions"
 
     def get_queryset(self):
         queryset = SubmissionBase.objects.select_related("result")
         reviewed = Review.objects.filter(
-            user__pk=self.kwargs['user_pk']
-            ).values_list("submission", flat=True)
+            user__pk=self.kwargs["user_pk"]
+        ).values_list("submission", flat=True)
         queryset = queryset.filter(pk__in=reviewed)
         submissions = queryset.order_by("submitted")
         submissions = submissions_generator(
             self.request,
             submissions,
-            user_pk=self.kwargs['user_pk']
+            user_pk=self.kwargs["user_pk"]
         )
 
         return submissions
@@ -326,8 +325,8 @@ class ReviewList(LoggedInMixin, CanReviewMixin, ListView):
 
 class ReviewAdmin(LoggedInMixin, CanReviewMixin, ListView):
 
-    template_name = 'pinax/submissions/review_admin.html'
-    context_object_name = 'reviewers'
+    template_name = "pinax/submissions/review_admin.html"
+    context_object_name = "reviewers"
 
     def get_queryset(self):
         return hookset.reviewers()
@@ -387,7 +386,7 @@ class ReviewDetail(LoggedInMixin, CanReviewMixin, DetailView):
 
 class ReviewDelete(LoggedInMixin, CanReviewMixin, DeleteView):
     model = Review
-    success_url = 'submission_detail'
+    success_url = "submission_detail"
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
@@ -398,7 +397,7 @@ class ReviewDelete(LoggedInMixin, CanReviewMixin, DeleteView):
 class ReviewAssignments(LoggedInMixin, CanReviewMixin, DetailView):
 
     template_name = "pinax/submissions/review_assignment.html"
-    context_object_name = 'assignments'
+    context_object_name = "assignments"
 
     def get_queryset(self):
         assignments = ReviewAssignment.objects.filter(
@@ -425,7 +424,9 @@ def review_assignment_opt_out(request, pk):
         )
     return redirect("review_assignments")
 
+
 # RESULT NOTIFICATION VIEWS ###################################################
+
 
 @login_required
 def result_notification(request, status):
