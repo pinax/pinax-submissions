@@ -1,10 +1,9 @@
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 
 from . import views
 
 
-urlpatterns = patterns(
-    "",
+urlpatterns = [
     url(
         r"^submit/$",
         views.SubmissionKindList.as_view(),
@@ -116,4 +115,4 @@ urlpatterns = patterns(
         views.review_assignment_opt_out,
         name="review_assignment_opt_out"
     ),
-)
+]
