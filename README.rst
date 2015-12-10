@@ -31,7 +31,7 @@ This app was developed as part of the Pinax ecosystem but is just a Django app a
 pinax-submissions
 -------------------
 
-pinax-submissions is an app for proposing and reviewing submissions.
+pinax-submissions is an app for proposing and reviewing submissions. It was pulled from Symposion.
 
 
 Running the Tests
