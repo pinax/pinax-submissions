@@ -95,7 +95,9 @@ class SubmissionAdd(LoggedInMixin, FormView):
 
     def form_invalid(self, form):
         # @@@|TODO change this message
-        messages.success(self.request, _("Form failed."))
+        messages.success(
+            self.request,
+            _("All fields are required.  Please correct errors and resubmit."))
         context = self.get_context_data()
         context["proposal_form"] = form
         return self.render_to_response(context)
