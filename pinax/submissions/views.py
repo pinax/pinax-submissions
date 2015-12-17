@@ -80,7 +80,7 @@ class SubmissionAdd(LoggedInMixin, FormView):
         return super(SubmissionAdd, self).get_context_data(
             kind=kind,
             kind_slug=kind_slug,
-            proposal_form=self.get_form_class(),
+            proposal_form=self.get_form(),
             **kwargs)
 
     def form_valid(self, form):
