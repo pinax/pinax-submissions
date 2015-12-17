@@ -95,7 +95,7 @@ class SubmissionAdd(LoggedInMixin, FormView):
 
     def form_invalid(self, form):
         # @@@|TODO change this message
-        messages.success(
+        messages.error(
             self.request,
             _("All fields are required.  Please correct errors and resubmit."))
         context = self.get_context_data()
@@ -212,7 +212,7 @@ class SubmissionDetail(LoggedInMixin, DetailView):
         return redirect(self.request.path)
 
     def form_invalid(self, form):
-        messages.success(self.request, _("Comment Form failed."))
+        messages.error(self.request, _("Comment Form failed."))
         return self.render_to_response(
             self.get_context_data(message_form=form))
 
