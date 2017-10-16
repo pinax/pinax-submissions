@@ -24,7 +24,7 @@ urlpatterns = [
     url(r"^notification/(?P<status>\w+)/send/$", views.result_notification_send, name="result_notification_send"),
     url(r"^reviews/(?P<pk>\d+)/$", views.ReviewDetail.as_view(), name="review_detail"),
 
-    url(r"^reviews(?P<pk>\d+)/delete/$", views.ReviewDelete.as_view(), name="review_delete"),
+    url(r"^reviews/(?P<pk>\d+)/delete/$", views.ReviewDelete.as_view(), name="review_delete"),
     url(r"^assignments/$", views.ReviewAssignments.as_view(), name="review_assignments"),
     url(r"^assignment/(?P<pk>\d+)/opt-out/$", views.review_assignment_opt_out, name="review_assignment_opt_out"),
 ]
