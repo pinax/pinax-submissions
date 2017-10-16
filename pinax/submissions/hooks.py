@@ -85,6 +85,12 @@ class DefaultHookSet(object):
         email.attach_alternative(message_html, "text/html")
         email.send()
 
+    def get_submission_add_success_url(self, submission):
+        return "/"
+
+    def get_submission_edit_success_url(self, submission):
+        return "/"
+
 
 class HookProxy(object):
 

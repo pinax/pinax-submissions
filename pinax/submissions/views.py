@@ -68,31 +68,33 @@ class SubmissionKindList(LoggedInMixin, ListView):
 
 class SubmissionAdd(LoggedInMixin, FormView):
     template_name = "pinax/submissions/submission_submit_kind.html"
-    success_url = "/dashboard/"
+
+    def dispatch(self, request, *args, **kwargs):
+        self.kind = get_object_or_404(SubmissionKind, slug=kwargs.get("kind_slug"))
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_success_url(self):
+        return hookset.get_submission_add_success_url(self.submission)
 
     def get_form_class(self):
         return settings.PINAX_SUBMISSIONS_FORMS[self.kwargs["kind_slug"]]
 
     def get_context_data(self, **kwargs):
-        kind_slug = self.kwargs["kind_slug"]
-        kind = get_object_or_404(SubmissionKind, slug=kind_slug)
-
-        return super(SubmissionAdd, self).get_context_data(
-            kind=kind,
-            kind_slug=kind_slug,
+        return super().get_context_data(
+            kind=self.kind,
+            kind_slug=self.kind.slug,
             proposal_form=self.get_form(),
             **kwargs
         )
 
     def form_valid(self, form):
-        ctx = self.get_context_data()
-        submission = form.save(commit=False)
-        submission.submitter = self.request.user
-        submission.kind = ctx.get("kind")
-        submission.save()
+        self.submission = form.save(commit=False)
+        self.submission.submitter = self.request.user
+        self.submission.kind = self.kind
+        self.submission.save()
         form.save_m2m()
         messages.success(self.request, _("Submission submitted."))
-        return HttpResponseRedirect(self.success_url)
+        return redirect(self.get_success_url())
 
     def form_invalid(self, form):
         # @@@|TODO change this message
@@ -107,8 +109,9 @@ class SubmissionAdd(LoggedInMixin, FormView):
 class SubmissionEdit(LoggedInMixin, UpdateView):
 
     template_name = "pinax/submissions/submission_edit.html"
-    # @@@|TODO change url
-    success_url = "/dashboard/"
+
+    def get_success_url(self):
+        return hookset.get_submission_edit_success_url(self.submission)
 
     def get_object(self):
         pk = self.kwargs.get(self.pk_url_kwarg, None)
@@ -137,18 +140,17 @@ class SubmissionEdit(LoggedInMixin, UpdateView):
         return super(SubmissionEdit, self).get_context_data(submission=self.get_object(), **kwargs)
 
     def form_valid(self, form):
-        submission = self.get_object()
-        form.save()
-        if hasattr(submission, "reviews"):
+        self.submission = form.save()
+        if hasattr(self.submission, "reviews"):
             users = User.objects.filter(
-                Q(review__submission=submission) |
-                Q(submissionmessage__submission=submission)
+                Q(review__submission=self.submission) |
+                Q(submissionmessage__submission=self.submission)
             )
             users = users.exclude(pk=self.request.user.pk).distinct()
             for user in users:
                 ctx = {
                     "user": self.request.user,
-                    "submission": submission,
+                    "submission": self.submission,
                 }
                 hookset.send_email(
                     [user.email],
@@ -156,7 +158,7 @@ class SubmissionEdit(LoggedInMixin, UpdateView):
                     context=ctx
                 )
         messages.success(self.request, "Submission updated.")
-        return HttpResponseRedirect(self.success_url)
+        return redirect(self.get_success_url())
 
 
 class SubmissionDetail(LoggedInMixin, DetailView):
@@ -451,7 +453,7 @@ def result_notification_prepare(request, status):
 
     submission_pks = []
     try:
-        submission_pks = [int(pk) for pk in request.POST.getlist("_selected_action")]:
+        submission_pks = [int(pk) for pk in request.POST.getlist("_selected_action")]
     except ValueError:
         return HttpResponseBadRequest()
 
