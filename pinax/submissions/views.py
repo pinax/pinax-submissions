@@ -81,7 +81,8 @@ class SubmissionAdd(LoggedInMixin, FormView):
             kind=kind,
             kind_slug=kind_slug,
             proposal_form=self.get_form(),
-            **kwargs)
+            **kwargs
+        )
 
     def form_valid(self, form):
         ctx = self.get_context_data()
@@ -95,9 +96,9 @@ class SubmissionAdd(LoggedInMixin, FormView):
 
     def form_invalid(self, form):
         # @@@|TODO change this message
-        messages.error(
-            self.request,
-            _("All fields are required.  Please correct errors and resubmit."))
+        messages.error(self.request,
+            _("All fields are required.  Please correct errors and resubmit.")
+        )
         context = self.get_context_data()
         context["proposal_form"] = form
         return self.render_to_response(context)
@@ -133,9 +134,7 @@ class SubmissionEdit(LoggedInMixin, UpdateView):
         return settings.PINAX_SUBMISSIONS_FORMS[self.get_object().kind.slug]
 
     def get_context_data(self, **kwargs):
-        return super(SubmissionEdit, self).get_context_data(
-            submission=self.get_object(),
-            **kwargs)
+        return super(SubmissionEdit, self).get_context_data(submission=self.get_object(), **kwargs)
 
     def form_valid(self, form):
         submission = self.get_object()
@@ -214,7 +213,8 @@ class SubmissionDetail(LoggedInMixin, DetailView):
     def form_invalid(self, form):
         messages.error(self.request, _("Comment Form failed."))
         return self.render_to_response(
-            self.get_context_data(message_form=form))
+            self.get_context_data(message_form=form)
+        )
 
     def get_context_data(self, **kwargs):
         context = super(SubmissionDetail, self).get_context_data(**kwargs)
@@ -293,7 +293,8 @@ class Reviews(LoggedInMixin, CanReviewMixin, ListView):
             reviewed = "user_reviewed"
         else:
             queryset = queryset.exclude(
-                reviews__user=self.request.user).exclude(submitter=self.request.user)
+                reviews__user=self.request.user
+            ).exclude(submitter=self.request.user)
             reviewed = "user_not_reviewed"
 
         submissions = submissions_generator(self.request, queryset)
@@ -316,12 +317,7 @@ class ReviewList(LoggedInMixin, CanReviewMixin, ListView):
         ).values_list("submission", flat=True)
         queryset = queryset.filter(pk__in=reviewed)
         submissions = queryset.order_by("submitted")
-        submissions = submissions_generator(
-            self.request,
-            submissions,
-            user_pk=self.kwargs["user_pk"]
-        )
-
+        submissions = submissions_generator(self.request, submissions, user_pk=self.kwargs["user_pk"])
         return submissions
 
 
@@ -340,8 +336,7 @@ class ReviewDetail(LoggedInMixin, CanReviewMixin, DetailView):
 
     def get_object(self, queryset=None):
         pk = self.kwargs.get(self.pk_url_kwarg, None)
-        submissions = SubmissionBase.objects.\
-            select_related("result").select_subclasses()
+        submissions = SubmissionBase.objects.select_related("result").select_subclasses()
         submission = get_object_or_404(submissions, pk=pk)
         return submission
 
@@ -375,7 +370,8 @@ class ReviewDetail(LoggedInMixin, CanReviewMixin, DetailView):
         context = super(ReviewDetail, self).get_context_data(**kwargs)
         submission = self.get_object()
         reviews = Review.objects.filter(
-            submission=submission).order_by("-submitted_at")
+            submission=submission
+        ).order_by("-submitted_at")
         messages = submission.messages.order_by("submitted_at")
 
         context["submission"] = submission
@@ -412,16 +408,14 @@ class ReviewAssignments(LoggedInMixin, CanReviewMixin, DetailView):
 @login_required
 @require_POST
 def review_assignment_opt_out(request, pk):
-    review_assignment = get_object_or_404(
-        ReviewAssignment,
+    review_assignment = get_object_or_404(ReviewAssignment,
         pk=pk,
         user=request.user
     )
     if not review_assignment.opted_out:
         review_assignment.opted_out = True
         review_assignment.save()
-        ReviewAssignment.create_assignments(
-            review_assignment.proposal,
+        ReviewAssignment.create_assignments(review_assignment.proposal,
             origin=ReviewAssignment.AUTO_ASSIGNED_LATER
         )
     return redirect("review_assignments")
@@ -436,15 +430,15 @@ def result_notification(request, status):
         return access_not_permitted(request)
 
     submissions = SubmissionBase.objects.filter(
-        result__status=status).select_related("result").select_subclasses()
+        result__status=status
+    ).select_related("result").select_subclasses()
     notification_templates = NotificationTemplate.objects.all()
 
-    ctx = {
+    return render(request, "pinax/submissions/result_notification.html", {
         "status": status,
         "submissions": submissions,
         "notification_templates": notification_templates,
-    }
-    return render(request, "pinax/submissions/result_notification.html", ctx)
+    })
 
 
 @login_required
@@ -457,10 +451,10 @@ def result_notification_prepare(request, status):
 
     submission_pks = []
     try:
-        for pk in request.POST.getlist("_selected_action"):
-            submission_pks.append(int(pk))
+        submission_pks = [int(pk) for pk in request.POST.getlist("_selected_action")]:
     except ValueError:
         return HttpResponseBadRequest()
+
     submissions = SubmissionBase.objects.filter(
         result__status=status,
     )
@@ -471,21 +465,17 @@ def result_notification_prepare(request, status):
     notification_template_pk = request.POST.get("notification_template", "")
     if notification_template_pk:
         notification_template = NotificationTemplate.objects.get(
-            pk=notification_template_pk)
+            pk=notification_template_pk
+        )
     else:
         notification_template = None
 
-    ctx = {
+    return render(request, "pinax/submissions/result_notification_prepare.html", {
         "status": status,
         "notification_template": notification_template,
         "submissions": submissions,
         "submission_pks": ",".join([str(pk) for pk in submission_pks]),
-    }
-    return render(
-        request,
-        "pinax/submissions/result_notification_prepare.html",
-        ctx
-    )
+    })
 
 
 @login_required
@@ -496,8 +486,8 @@ def result_notification_send(request, status):
     if not request.user.has_perm("reviews.can_manage"):
         return access_not_permitted(request)
 
-    if not all([k in request.POST for k in ["submission_pks", "from_address",
-                                            "subject", "body"]]):
+    fields = ["submission_pks", "from_address", "subject", "body"]
+    if not all([k in request.POST for k in fields]):
         return HttpResponseBadRequest()
 
     try:
@@ -515,7 +505,8 @@ def result_notification_send(request, status):
     notification_template_pk = request.POST.get("notification_template", "")
     if notification_template_pk:
         notification_template = NotificationTemplate.objects.get(
-            pk=notification_template_pk)
+            pk=notification_template_pk
+        )
     else:
         notification_template = None
 
@@ -546,8 +537,7 @@ def result_notification_send(request, status):
 
 @login_required
 def document_create(request, proposal_pk):
-    submission = get_object_or_404(
-        SubmissionBase,
+    submission = get_object_or_404(SubmissionBase,
         pk=proposal_pk,
         submitter=request.user
     )
@@ -579,8 +569,6 @@ def document_download(request, pk, *args):
     if getattr(settings, "USE_X_ACCEL_REDIRECT", False):
         response = HttpResponse()
         response["X-Accel-Redirect"] = document.file.url
-        # delete content-type to allow Gondor to determine the filetype and
-        # we definitely don't want Django's crappy default :-)
         del response["content-type"]
     else:
         response = static.serve(
@@ -593,8 +581,7 @@ def document_download(request, pk, *args):
 
 @login_required
 def document_delete(request, pk):
-    document = get_object_or_404(
-        SupportingDocument,
+    document = get_object_or_404(SupportingDocument,
         pk=pk,
         uploaded_by=request.user
     )
