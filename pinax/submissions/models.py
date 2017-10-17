@@ -110,7 +110,7 @@ class SupportingDocument(models.Model):
     description = models.CharField(max_length=140, verbose_name=_("Description"))
 
     def download_url(self):
-        return reverse("submissions_document_download", args=[self.pk, os.path.basename(self.file.name).lower()])
+        return reverse("submission_document_download", args=[self.pk, os.path.basename(self.document.name).lower()])
 
 
 class ReviewAssignment(models.Model):

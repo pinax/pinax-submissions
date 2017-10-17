@@ -74,6 +74,7 @@ class SubmissionAdd(LoggedInMixin, FormView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
+        print(hookset)
         return hookset.get_submission_add_success_url(self.submission)
 
     def get_form_class(self):
@@ -245,7 +246,7 @@ class SubmissionCancel(LoggedInMixin, DetailView):
         submission.cancel()
         # @@@|TODO fire off email to submitter and other speakers
         messages.success(request, "Submission has been cancelled")
-        return redirect("dashboard")
+        return redirect(hookset.get_submission_cancel_success_url(submission))
 
     def get_context_data(self, **kwargs):
         context = super(SubmissionCancel, self).get_context_data(**kwargs)
@@ -539,10 +540,7 @@ def result_notification_send(request, status):
 
 @login_required
 def document_create(request, proposal_pk):
-    submission = get_object_or_404(SubmissionBase,
-        pk=proposal_pk,
-        submitter=request.user
-    )
+    submission = get_object_or_404(SubmissionBase, pk=proposal_pk, submitter=request.user)
     submission = SubmissionBase.objects.get_subclass(pk=submission.pk)
 
     if submission.cancelled:
@@ -570,12 +568,12 @@ def document_download(request, pk, *args):
     document = get_object_or_404(SupportingDocument, pk=pk)
     if getattr(settings, "USE_X_ACCEL_REDIRECT", False):
         response = HttpResponse()
-        response["X-Accel-Redirect"] = document.file.url
+        response["X-Accel-Redirect"] = document.document.url
         del response["content-type"]
     else:
         response = static.serve(
             request,
-            document.file.name,
+            document.document.name,
             document_root=settings.MEDIA_ROOT
         )
     return response

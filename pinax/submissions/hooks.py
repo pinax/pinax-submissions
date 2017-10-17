@@ -91,6 +91,9 @@ class DefaultHookSet(object):
     def get_submission_edit_success_url(self, submission):
         return "/"
 
+    def get_submission_cancel_success_url(self, submission):
+        return "/"
+
 
 class HookProxy(object):
 
