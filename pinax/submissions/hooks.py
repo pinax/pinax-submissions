@@ -69,7 +69,7 @@ class DefaultHookSet(object):
         )
 
         message_html = render_to_string(
-            "pinax/submission/emails/%s/message.html" % kind,
+            "pinax/submissions/emails/%s/message.html" % kind,
             ctx
         )
         message_plaintext = strip_tags(message_html)
