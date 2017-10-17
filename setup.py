@@ -16,7 +16,7 @@ setup(
     description="",
     name="pinax-submissions",
     long_description=read("README.rst"),
-    version="0.2.4",
+    version="0.3.0",
     url="http://github.com/pinax/pinax-submissions/",
     license="MIT",
     packages=find_packages(),
