@@ -2,6 +2,8 @@ from django.conf.urls import url
 
 from . import views
 
+app_name = "pinax_submissions"
+
 
 urlpatterns = [
     url(r"^submit/$", views.SubmissionKindList.as_view(), name="submission_submit"),

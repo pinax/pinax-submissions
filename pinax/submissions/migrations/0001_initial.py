@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
                 ('text_html', models.TextField(blank=True)),
                 ('public', models.BooleanField(default=False, choices=[(True, 'public'), (False, 'private')], verbose_name='Public')),
                 ('commented_at', models.DateTimeField(default=django.utils.timezone.now, verbose_name='Commented at')),
-                ('commenter', models.ForeignKey(to=settings.AUTH_USER_MODEL, verbose_name='Commenter')),
+                ('commenter', models.ForeignKey(to=settings.AUTH_USER_MODEL, verbose_name='Commenter', on_delete=django.db.models.deletion.CASCADE)),
             ],
             options={
                 'verbose_name': 'comment',
@@ -100,8 +100,8 @@ class Migration(migrations.Migration):
                 ('message', models.TextField(verbose_name='Message')),
                 ('message_html', models.TextField(blank=True)),
                 ('submitted_at', models.DateTimeField(default=django.utils.timezone.now, editable=False, verbose_name='Submitted at')),
-                ('submission', models.ForeignKey(to='submissions.SubmissionBase', related_name='messages', verbose_name='Submission')),
-                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL, verbose_name='User')),
+                ('submission', models.ForeignKey(to='submissions.SubmissionBase', related_name='messages', verbose_name='Submission', on_delete=django.db.models.deletion.CASCADE)),
+                ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL, verbose_name='User', on_delete=django.db.models.deletion.CASCADE)),
             ],
             options={
                 'verbose_name_plural': 'submission messages',
@@ -114,7 +114,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(serialize=False, verbose_name='ID', primary_key=True, auto_created=True)),
                 ('status', models.CharField(default='undecided', choices=[('accepted', 'accepted'), ('rejected', 'rejected'), ('undecided', 'undecided'), ('standby', 'standby')], verbose_name='Status', max_length=20)),
-                ('submission', models.OneToOneField(to='submissions.SubmissionBase', related_name='result', verbose_name='Submission')),
+                ('submission', models.OneToOneField(to='submissions.SubmissionBase', related_name='result', verbose_name='Submission', on_delete=django.db.models.deletion.CASCADE)),
             ],
             options={
                 'verbose_name': 'submission result',
@@ -128,44 +128,44 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(default=django.utils.timezone.now, verbose_name='Created at')),
                 ('document', models.FileField(verbose_name='Document', upload_to=pinax.submissions.models.uuid_filename)),
                 ('description', models.CharField(verbose_name='Description', max_length=140)),
-                ('submission', models.ForeignKey(to='submissions.SubmissionBase', related_name='supporting_documents', verbose_name='Submission')),
-                ('uploaded_by', models.ForeignKey(to=settings.AUTH_USER_MODEL, verbose_name='Uploaded by')),
+                ('submission', models.ForeignKey(to='submissions.SubmissionBase', related_name='supporting_documents', verbose_name='Submission', on_delete=django.db.models.deletion.CASCADE)),
+                ('uploaded_by', models.ForeignKey(to=settings.AUTH_USER_MODEL, verbose_name='Uploaded by', on_delete=django.db.models.deletion.CASCADE)),
             ],
         ),
         migrations.AddField(
             model_name='submissionbase',
             name='kind',
-            field=models.ForeignKey(to='submissions.SubmissionKind', verbose_name='Kind'),
+            field=models.ForeignKey(to='submissions.SubmissionKind', verbose_name='Kind', on_delete=django.db.models.deletion.CASCADE),
         ),
         migrations.AddField(
             model_name='submissionbase',
             name='submitter',
-            field=models.ForeignKey(to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=django.db.models.deletion.CASCADE),
         ),
         migrations.AddField(
             model_name='reviewassignment',
             name='submission',
-            field=models.ForeignKey(to='submissions.SubmissionBase', verbose_name='Submission'),
+            field=models.ForeignKey(to='submissions.SubmissionBase', verbose_name='Submission', on_delete=django.db.models.deletion.CASCADE),
         ),
         migrations.AddField(
             model_name='reviewassignment',
             name='user',
-            field=models.ForeignKey(to=settings.AUTH_USER_MODEL, verbose_name='User'),
+            field=models.ForeignKey(to=settings.AUTH_USER_MODEL, verbose_name='User', on_delete=django.db.models.deletion.CASCADE),
         ),
         migrations.AddField(
             model_name='review',
             name='submission',
-            field=models.ForeignKey(to='submissions.SubmissionBase', related_name='reviews', verbose_name='Submission'),
+            field=models.ForeignKey(to='submissions.SubmissionBase', related_name='reviews', verbose_name='Submission', on_delete=django.db.models.deletion.CASCADE),
         ),
         migrations.AddField(
             model_name='review',
             name='user',
-            field=models.ForeignKey(to=settings.AUTH_USER_MODEL, verbose_name='User'),
+            field=models.ForeignKey(to=settings.AUTH_USER_MODEL, verbose_name='User', on_delete=django.db.models.deletion.CASCADE),
         ),
         migrations.AddField(
             model_name='resultnotification',
             name='submission',
-            field=models.ForeignKey(to='submissions.SubmissionBase', related_name='notifications', verbose_name='Submission'),
+            field=models.ForeignKey(to='submissions.SubmissionBase', related_name='notifications', verbose_name='Submission', on_delete=django.db.models.deletion.CASCADE),
         ),
         migrations.AddField(
             model_name='resultnotification',
@@ -175,6 +175,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='comment',
             name='submission',
-            field=models.ForeignKey(to='submissions.SubmissionBase', related_name='comments', verbose_name='Submission'),
+            field=models.ForeignKey(to='submissions.SubmissionBase', related_name='comments', verbose_name='Submission', on_delete=django.db.models.deletion.CASCADE),
         ),
     ]

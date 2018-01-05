@@ -1,7 +1,6 @@
 from django.contrib import admin
 
-from .models import SubmissionKind, NotificationTemplate, SubmissionResult
-
+from .models import NotificationTemplate, SubmissionKind, SubmissionResult
 
 admin.site.register(
     NotificationTemplate,

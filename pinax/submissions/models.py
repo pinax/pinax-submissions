@@ -5,9 +5,9 @@ import os
 import uuid
 
 from django.conf import settings
-from django.core.urlresolvers import reverse
-from django.db import models
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import models
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
@@ -38,8 +38,8 @@ class SubmissionKind(models.Model):
 @python_2_unicode_compatible
 class SubmissionBase(models.Model):
 
-    kind = models.ForeignKey(SubmissionKind, verbose_name=_("Kind"))
-    submitter = models.ForeignKey(settings.AUTH_USER_MODEL)
+    kind = models.ForeignKey(SubmissionKind, verbose_name=_("Kind"), on_delete=models.CASCADE)
+    submitter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     submitted = models.DateTimeField(
         default=timezone.now,
         editable=False,
@@ -103,14 +103,14 @@ class SubmissionBase(models.Model):
 
 
 class SupportingDocument(models.Model):
-    submission = models.ForeignKey(SubmissionBase, related_name="supporting_documents", verbose_name=_("Submission"))
-    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_("Uploaded by"))
+    submission = models.ForeignKey(SubmissionBase, related_name="supporting_documents", verbose_name=_("Submission"), on_delete=models.CASCADE)
+    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_("Uploaded by"), on_delete=models.CASCADE)
     created_at = models.DateTimeField(default=timezone.now, verbose_name=_("Created at"))
     document = models.FileField(upload_to=uuid_filename, verbose_name=_("Document"))
     description = models.CharField(max_length=140, verbose_name=_("Description"))
 
     def download_url(self):
-        return reverse("submission_document_download", args=[self.pk, os.path.basename(self.document.name).lower()])
+        return reverse("pinax_submissions:submission_document_download", args=[self.pk, os.path.basename(self.document.name).lower()])
 
 
 class ReviewAssignment(models.Model):
@@ -126,8 +126,8 @@ class ReviewAssignment(models.Model):
         (AUTO_ASSIGNED_LATER, _("auto-assigned, later")),
     ]
 
-    submission = models.ForeignKey(SubmissionBase, verbose_name=_("Submission"))
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_("User"))
+    submission = models.ForeignKey(SubmissionBase, verbose_name=_("Submission"), on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_("User"), on_delete=models.CASCADE)
     origin = models.IntegerField(choices=ORIGIN_CHOICES, verbose_name=_("Origin"))
     assigned_at = models.DateTimeField(default=timezone.now, verbose_name=_("Assigned at"))
     opted_out = models.BooleanField(default=False, verbose_name=_("Opted out"))
@@ -138,8 +138,8 @@ class ReviewAssignment(models.Model):
 
 
 class SubmissionMessage(models.Model):
-    submission = models.ForeignKey(SubmissionBase, related_name="messages", verbose_name=_("Submission"))
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_("User"))
+    submission = models.ForeignKey(SubmissionBase, related_name="messages", verbose_name=_("Submission"), on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_("User"), on_delete=models.CASCADE)
     message = models.TextField(verbose_name=_("Message"))
     message_html = models.TextField(blank=True)
     submitted_at = models.DateTimeField(default=timezone.now, editable=False, verbose_name=_("Submitted at"))
@@ -155,8 +155,8 @@ class SubmissionMessage(models.Model):
 
 
 class Review(models.Model):
-    submission = models.ForeignKey(SubmissionBase, related_name="reviews", verbose_name=_("Submission"))
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_("User"))
+    submission = models.ForeignKey(SubmissionBase, related_name="reviews", verbose_name=_("Submission"), on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_("User"), on_delete=models.CASCADE)
     comment = models.TextField(verbose_name=_("Comment"))
     comment_html = models.TextField(blank=True)
     submitted_at = models.DateTimeField(default=timezone.now, editable=False, verbose_name=_("Submitted at"))
@@ -171,7 +171,7 @@ class Review(models.Model):
 
 
 class SubmissionResult(models.Model):
-    submission = models.OneToOneField(SubmissionBase, related_name="result", verbose_name=_("Submission"))
+    submission = models.OneToOneField(SubmissionBase, related_name="result", verbose_name=_("Submission"), on_delete=models.CASCADE)
     accepted = models.NullBooleanField(choices=[
         (True, "accepted"),
         (False, "rejected"),
@@ -198,8 +198,8 @@ class SubmissionResult(models.Model):
 
 
 class Comment(models.Model):
-    submission = models.ForeignKey(SubmissionBase, related_name="comments", verbose_name=_("Submission"))
-    commenter = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_("Commenter"))
+    submission = models.ForeignKey(SubmissionBase, related_name="comments", verbose_name=_("Submission"), on_delete=models.CASCADE)
+    commenter = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_("Commenter"), on_delete=models.CASCADE)
     text = models.TextField(verbose_name=_("Text"))
     text_html = models.TextField(blank=True)
 
@@ -228,7 +228,7 @@ class NotificationTemplate(models.Model):
 
 
 class ResultNotification(models.Model):
-    submission = models.ForeignKey(SubmissionBase, related_name="notifications", verbose_name=_("Submission"))
+    submission = models.ForeignKey(SubmissionBase, related_name="notifications", verbose_name=_("Submission"), on_delete=models.CASCADE)
     template = models.ForeignKey(NotificationTemplate, null=True, blank=True, on_delete=models.SET_NULL, verbose_name=_("Template"))
     timestamp = models.DateTimeField(default=timezone.now, verbose_name=_("Timestamp"))
     to_address = models.EmailField(verbose_name=_("To address"))

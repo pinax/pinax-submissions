@@ -13,7 +13,8 @@ DEFAULT_SETTINGS = dict(
         "django.contrib.contenttypes",
         "django.contrib.sites",
         "pinax.submissions",
-        "pinax.submissions.tests"
+        "pinax.submissions.tests",
+        "account"
     ],
     MIDDLEWARE_CLASSES=[],
     DATABASES={
