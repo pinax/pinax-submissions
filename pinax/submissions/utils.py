@@ -12,7 +12,7 @@ class LoggedInMixin(object):
     """
 
     def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             raise Http404
         return super(LoggedInMixin, self).dispatch(request, *args, **kwargs)
 
@@ -26,7 +26,7 @@ class CanReviewMixin(object):
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.has_perm("reviews.can_review_submissions"):
-            if not request.user.pk == self.kwargs['user_pk']:
+            if not request.user.pk == self.kwargs["user_pk"]:
                 render(request, "pinax/submissions/access_not_permitted.html")
         return super(CanReviewMixin, self).dispatch(request, *args, **kwargs)
 

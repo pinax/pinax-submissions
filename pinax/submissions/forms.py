@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from django import forms
 
-from .models import Review, Comment, SubmissionMessage, SupportingDocument
+from .models import Comment, Review, SubmissionMessage, SupportingDocument
 
 
 class SupportingDocumentCreateForm(forms.ModelForm):

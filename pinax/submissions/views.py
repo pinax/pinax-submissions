@@ -1,31 +1,28 @@
 from __future__ import unicode_literals
 
+from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.core.mail import send_mass_mail
 from django.db.models import Q
 from django.http import (
     Http404,
     HttpResponse,
-    HttpResponseForbidden,
     HttpResponseBadRequest,
+    HttpResponseForbidden,
     HttpResponseNotAllowed,
-    HttpResponseRedirect
 )
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import get_object_or_404, redirect, render
 from django.template import Context, Template
+from django.utils.translation import ugettext_lazy as _
 from django.views import static
+from django.views.decorators.http import require_POST
 from django.views.generic import (
+    DeleteView,
+    DetailView,
+    FormView,
     ListView,
     UpdateView,
-    FormView,
-    DetailView,
-    DeleteView
 )
-from django.views.decorators.http import require_POST
-
-from django.contrib import messages
-from django.contrib.auth.models import User
-
-from django.utils.translation import ugettext_lazy as _
 
 from account.decorators import login_required
 
@@ -33,7 +30,7 @@ from .conf import settings
 from .forms import (
     ReviewForm,
     SubmitterCommentForm,
-    SupportingDocumentCreateForm
+    SupportingDocumentCreateForm,
 )
 from .hooks import hookset
 from .models import (
@@ -44,13 +41,9 @@ from .models import (
     SubmissionBase,
     SubmissionKind,
     SubmissionMessage,
-    SupportingDocument
+    SupportingDocument,
 )
-from .utils import (
-    LoggedInMixin,
-    CanReviewMixin,
-    submissions_generator
-)
+from .utils import CanReviewMixin, LoggedInMixin, submissions_generator
 
 
 class SubmissionKindList(LoggedInMixin, ListView):
@@ -99,7 +92,8 @@ class SubmissionAdd(LoggedInMixin, FormView):
 
     def form_invalid(self, form):
         # @@@|TODO change this message
-        messages.error(self.request,
+        messages.error(
+            self.request,
             _("All fields are required.  Please correct errors and resubmit.")
         )
         context = self.get_context_data()
@@ -143,7 +137,7 @@ class SubmissionEdit(LoggedInMixin, UpdateView):
     def form_valid(self, form):
         self.submission = form.save()
         if hasattr(self.submission, "reviews"):
-            users = User.objects.filter(
+            users = get_user_model().objects.filter(
                 Q(review__submission=self.submission) |
                 Q(submissionmessage__submission=self.submission)
             )
@@ -191,7 +185,7 @@ class SubmissionDetail(LoggedInMixin, DetailView):
         message.submission = submission
         message.save()
 
-        reviewers = User.objects.filter(
+        reviewers = get_user_model().objects.filter(
             id__in=SubmissionMessage.objects.filter(
                 submission=submission
             ).exclude(
@@ -411,14 +405,16 @@ class ReviewAssignments(LoggedInMixin, CanReviewMixin, DetailView):
 @login_required
 @require_POST
 def review_assignment_opt_out(request, pk):
-    review_assignment = get_object_or_404(ReviewAssignment,
+    review_assignment = get_object_or_404(
+        ReviewAssignment,
         pk=pk,
         user=request.user
     )
     if not review_assignment.opted_out:
         review_assignment.opted_out = True
         review_assignment.save()
-        ReviewAssignment.create_assignments(review_assignment.proposal,
+        ReviewAssignment.create_assignments(
+            review_assignment.proposal,
             origin=ReviewAssignment.AUTO_ASSIGNED_LATER
         )
     return redirect("review_assignments")
@@ -581,7 +577,8 @@ def document_download(request, pk, *args):
 
 @login_required
 def document_delete(request, pk):
-    document = get_object_or_404(SupportingDocument,
+    document = get_object_or_404(
+        SupportingDocument,
         pk=pk,
         uploaded_by=request.user
     )

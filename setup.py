@@ -1,22 +1,53 @@
-import codecs
-
-from os import path
 from setuptools import find_packages, setup
 
 
-def read(*parts):
-    filename = path.join(path.dirname(__file__), *parts)
-    with codecs.open(filename, encoding="utf-8") as fp:
-        return fp.read()
+LONG_DESCRIPTION = """
+.. image:: http://pinaxproject.com/pinax-design/patches/blank.svg
+    :target: https://pypi.python.org/pypi/pinax-submissions/
+
+=================
+Pinax Submissions
+=================
+.. image:: https://img.shields.io/pypi/v/pinax-submissions.svg
+    :target: https://pypi.python.org/pypi/pinax-submissions/
+.. image:: https://img.shields.io/badge/license-MIT-blue.svg
+    :target: https://pypi.python.org/pypi/pinax-submissions/
+.. image:: https://img.shields.io/circleci/project/github/pinax/pinax-submissions.svg
+    :target: https://circleci.com/gh/pinax/pinax-submissions
+.. image:: https://img.shields.io/codecov/c/github/pinax/pinax-submissions.svg
+    :target: https://codecov.io/gh/pinax/pinax-submissions
+.. image:: https://img.shields.io/github/contributors/pinax/pinax-submissions.svg
+    :target: https://github.com/pinax/pinax-submissions/graphs/contributors
+.. image:: https://img.shields.io/github/issues-pr/pinax/pinax-submissions.svg
+    :target: https://github.com/pinax/pinax-submissions/pulls
+.. image:: https://img.shields.io/github/issues-pr-closed/pinax/pinax-submissions.svg
+    :target: https://github.com/pinax/pinax-submissions/pulls?q=is%3Apr+is%3Aclosed
+.. image:: http://slack.pinaxproject.com/badge.svg
+    :target: http://slack.pinaxproject.com/
+
+
+``pinax-submissions`` is an app for proposing and reviewing submissions. It was pulled from ``symposion``.
+
+
+Supported Django and Python Versions
+------------------------------------
++-----------------+-----+-----+-----+-----+
+| Django \ Python | 2.7 | 3.4 | 3.5 | 3.6 |
++=================+=====+=====+=====+=====+
+| 1.11            |  *  |  *  |  *  |  *  |
++-----------------+-----+-----+-----+-----+
+| 2.0             |     |  *  |  *  |  *  |
++-----------------+-----+-----+-----+-----+
+"""
 
 
 setup(
-    author="",
-    author_email="",
-    description="",
+    author="Pinax Team",
+    author_email="team@pinaxproject.com",
+    description="a Django app for proposing and reviewing submissions. It was pulled from Symposion.",
     name="pinax-submissions",
-    long_description=read("README.rst"),
-    version="0.3.0",
+    long_description=LONG_DESCRIPTION,
+    version="1.0.0",
     url="http://github.com/pinax/pinax-submissions/",
     license="MIT",
     packages=find_packages(),
@@ -27,14 +58,18 @@ setup(
     tests_require=[
     ],
     install_requires=[
+        "django>=1.11",
         "Markdown>=2.6.3",
         "django-model-utils>=2.3.1",
-        "django-appconf>=1.0.1"
+        "django-appconf>=1.0.1",
+        "django-user-accounts>=2.0.0"
     ],
     classifiers=[
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "Environment :: Web Environment",
         "Framework :: Django",
+        "Framework :: Django :: 1.11",
+        "Framework :: Django :: 2.0",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
