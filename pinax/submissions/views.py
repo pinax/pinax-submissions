@@ -381,7 +381,7 @@ class ReviewDetail(LoggedInMixin, CanReviewMixin, DetailView):
 
 class ReviewDelete(LoggedInMixin, CanReviewMixin, DeleteView):
     model = Review
-    success_url = "submission_detail"
+    success_url = "pinax_submissions:submission_detail"
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
@@ -417,7 +417,7 @@ def review_assignment_opt_out(request, pk):
             review_assignment.proposal,
             origin=ReviewAssignment.AUTO_ASSIGNED_LATER
         )
-    return redirect("review_assignments")
+    return redirect("pinax_submissions:review_assignments")
 
 
 # RESULT NOTIFICATION VIEWS ###################################################
@@ -528,7 +528,7 @@ def result_notification_send(request, status):
 
     send_mass_mail(emails)
 
-    return redirect("result_notification", status=status)
+    return redirect("pinax_submissions:result_notification", status=status)
 
 
 # DOCUMENT VIEWS #############################################################
@@ -549,7 +549,7 @@ def document_create(request, proposal_pk):
             document.submission = submission
             document.uploaded_by = request.user
             document.save()
-            return redirect("submission_detail", submission.pk)
+            return redirect("pinax_submissions:submission_detail", submission.pk)
     else:
         form = SupportingDocumentCreateForm()
 
@@ -584,4 +584,4 @@ def document_delete(request, pk):
     )
     if request.method == "POST":
         document.delete()
-    return redirect("submission_detail", document.submission.pk)
+    return redirect("pinax_submissions:submission_detail", document.submission.pk)

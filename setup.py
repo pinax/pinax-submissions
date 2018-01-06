@@ -47,7 +47,7 @@ setup(
     description="a Django app for proposing and reviewing submissions. It was pulled from Symposion.",
     name="pinax-submissions",
     long_description=LONG_DESCRIPTION,
-    version="1.0.0",
+    version="1.0.1",
     url="http://github.com/pinax/pinax-submissions/",
     license="MIT",
     packages=find_packages(),
@@ -60,7 +60,7 @@ setup(
     install_requires=[
         "django>=1.11",
         "Markdown>=2.6.3",
-        "django-model-utils>=2.3.1",
+        "django-model-utils>=2.3.1",  # needs 3.1.1 which is not on pypi at this time
         "django-appconf>=1.0.1",
         "django-user-accounts>=2.0.0"
     ],
