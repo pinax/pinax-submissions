@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 
 LONG_DESCRIPTION = """
-.. image:: http://pinaxproject.com/pinax-design/patches/blank.svg
+.. image:: http://pinaxproject.com/pinax-design/patches/pinax-submissions.svg
     :target: https://pypi.python.org/pypi/pinax-submissions/
 
 =================
