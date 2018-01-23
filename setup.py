@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-
+VERSION = "1.0.2"
 LONG_DESCRIPTION = """
 .. image:: http://pinaxproject.com/pinax-design/patches/pinax-submissions.svg
     :target: https://pypi.python.org/pypi/pinax-submissions/
@@ -8,10 +8,12 @@ LONG_DESCRIPTION = """
 =================
 Pinax Submissions
 =================
+
 .. image:: https://img.shields.io/pypi/v/pinax-submissions.svg
     :target: https://pypi.python.org/pypi/pinax-submissions/
-.. image:: https://img.shields.io/badge/license-MIT-blue.svg
-    :target: https://pypi.python.org/pypi/pinax-submissions/
+
+\ 
+
 .. image:: https://img.shields.io/circleci/project/github/pinax/pinax-submissions.svg
     :target: https://circleci.com/gh/pinax/pinax-submissions
 .. image:: https://img.shields.io/codecov/c/github/pinax/pinax-submissions.svg
@@ -22,11 +24,17 @@ Pinax Submissions
     :target: https://github.com/pinax/pinax-submissions/pulls
 .. image:: https://img.shields.io/github/issues-pr-closed/pinax/pinax-submissions.svg
     :target: https://github.com/pinax/pinax-submissions/pulls?q=is%3Apr+is%3Aclosed
+
+\ 
+
 .. image:: http://slack.pinaxproject.com/badge.svg
     :target: http://slack.pinaxproject.com/
+.. image:: https://img.shields.io/badge/license-MIT-blue.svg
+    :target: https://opensource.org/licenses/MIT/
 
+\ 
 
-``pinax-submissions`` is an app for proposing and reviewing submissions. It was pulled from ``symposion``.
+``pinax-submissions`` is an app for proposing and reviewing submissions.
 
 
 Supported Django and Python Versions
@@ -44,26 +52,16 @@ Supported Django and Python Versions
 setup(
     author="Pinax Team",
     author_email="team@pinaxproject.com",
-    description="a Django app for proposing and reviewing submissions. It was pulled from Symposion.",
+    description="a Django app for proposing and reviewing submissions",
     name="pinax-submissions",
     long_description=LONG_DESCRIPTION,
-    version="1.0.1",
+    version=VERSION,
     url="http://github.com/pinax/pinax-submissions/",
     license="MIT",
     packages=find_packages(),
     package_data={
         "submissions": []
     },
-    test_suite="runtests.runtests",
-    tests_require=[
-    ],
-    install_requires=[
-        "django>=1.11",
-        "Markdown>=2.6.3",
-        "django-model-utils>=2.3.1",  # needs 3.1.1 which is not on pypi at this time
-        "django-appconf>=1.0.1",
-        "django-user-accounts>=2.0.0"
-    ],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Web Environment",
@@ -75,8 +73,22 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 3",
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         "Topic :: Software Development :: Libraries :: Python Modules",
+    ],
+    install_requires=[
+        "django>=1.11",
+        "Markdown>=2.6.3",
+        "django-model-utils>=3.1.1",
+        "django-appconf>=1.0.1",
+        "django-user-accounts>=2.0.3"
+    ],
+    test_suite="runtests.runtests",
+    tests_require=[
     ],
     zip_safe=False
 )

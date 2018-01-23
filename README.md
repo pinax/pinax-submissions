@@ -9,7 +9,7 @@
 [![](https://img.shields.io/github/issues-pr-closed/pinax/pinax-submissions.svg)](https://github.com/pinax/pinax-submissions/pulls?q=is%3Apr+is%3Aclosed)
 
 [![](http://slack.pinaxproject.com/badge.svg)](http://slack.pinaxproject.com/)
-[![](https://img.shields.io/badge/license-MIT-blue.svg)](https://pypi.python.org/pypi/pinax-submissions/)
+[![](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 
 ## Table of Contents
@@ -36,8 +36,7 @@ Django apps, themes, and starter project templates. This collection can be found
 
 ### Overview
 
-`pinax-submissions` is an app for proposing and reviewing submissions. It was
-pulled from `symposion`.
+`pinax-submissions` is an app for proposing and reviewing submissions.
 
 #### Features
 
@@ -74,6 +73,11 @@ Django \ Python | 2.7 | 3.4 | 3.5 | 3.6
 ### 0.2.1
 
 ### 0.2
+
+
+## History
+
+`pinax-submissions` was extracted from the `symposion` project.
 
 
 ## Contribute

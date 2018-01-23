@@ -16,7 +16,6 @@ DEFAULT_SETTINGS = dict(
         "pinax.submissions.tests",
         "account"
     ],
-    MIDDLEWARE=[],
     DATABASES={
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
