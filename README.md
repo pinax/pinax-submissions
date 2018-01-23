@@ -60,7 +60,24 @@ Django \ Python | 2.7 | 3.4 | 3.5 | 3.6
 
 ## Change Log
 
+### 1.0.2
+
+* Update installation requirements
+* Update CI configuration
+* Update .gitignore
+* Remove unused MANIFEST entries
+* Update patch target links
+* Add namespacing to tests/urls.py
+
+
 ### 1.0.0
+
+* Add Django 2.0 compatibility testing
+* Drop Django 1.8, 1.9, 1.10 and Python 3.3 support
+* Convert CI and coverage to CircleCi and CodeCov
+* Add PyPi-compatible long description
+* Standardize documentation layout
+* Add django>=1.11 to requirements
 
 ### 0.3.0
 
