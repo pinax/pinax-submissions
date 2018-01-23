@@ -2,6 +2,8 @@
 
 # Pinax Submissions
 
+[![](https://img.shields.io/pypi/v/pinax-submissions.svg)](https://pypi.python.org/pypi/pinax-submissions/)
+
 [![CircleCI](https://img.shields.io/circleci/project/github/pinax/pinax-submissions.svg)](https://circleci.com/gh/pinax/pinax-submissions)
 [![CodeCov](https://img.shields.io/codecov/c/github/pinax/pinax-submissions.svg)](https://codecov.io/gh/pinax/pinax-submissions)
 [![](https://img.shields.io/github/contributors/pinax/pinax-submissions.svg)](https://github.com/pinax/pinax-submissions/graphs/contributors)
