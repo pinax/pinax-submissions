@@ -62,6 +62,10 @@ Django \ Python | 2.7 | 3.4 | 3.5 | 3.6
 
 ## Change Log
 
+### 1.0.3
+
+* Allow use with any account-management package by removing django-user-accounts dependency
+
 ### 1.0.2
 
 * Update installation requirements

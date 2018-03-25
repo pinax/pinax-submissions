@@ -24,8 +24,7 @@ from django.views.generic import (
     UpdateView,
 )
 
-from account.decorators import login_required
-
+from .compat import login_required
 from .conf import settings
 from .forms import (
     ReviewForm,

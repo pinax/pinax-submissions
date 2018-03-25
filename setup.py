@@ -1,6 +1,8 @@
+import os
+import sys
 from setuptools import find_packages, setup
 
-VERSION = "1.0.2"
+VERSION = "1.0.3"
 LONG_DESCRIPTION = """
 .. image:: http://pinaxproject.com/pinax-design/patches/pinax-submissions.svg
     :target: https://pypi.python.org/pypi/pinax-submissions/
@@ -49,6 +51,12 @@ Supported Django and Python Versions
 """
 
 
+# Publish Helper.
+if sys.argv[-1] == 'publish':
+    os.system('python setup.py sdist bdist_wheel upload')
+    sys.exit()
+
+
 setup(
     author="Pinax Team",
     author_email="team@pinaxproject.com",
@@ -84,8 +92,7 @@ setup(
         "django>=1.11",
         "Markdown>=2.6.3",
         "django-model-utils>=3.1.1",
-        "django-appconf>=1.0.1",
-        "django-user-accounts>=2.0.3"
+        "django-appconf>=1.0.2"
     ],
     test_suite="runtests.runtests",
     tests_require=[

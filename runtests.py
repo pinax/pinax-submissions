@@ -13,8 +13,7 @@ DEFAULT_SETTINGS = dict(
         "django.contrib.contenttypes",
         "django.contrib.sites",
         "pinax.submissions",
-        "pinax.submissions.tests",
-        "account"
+        "pinax.submissions.tests"
     ],
     DATABASES={
         "default": {
