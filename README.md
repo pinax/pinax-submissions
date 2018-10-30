@@ -75,7 +75,6 @@ Django \ Python | 2.7 | 3.4 | 3.5 | 3.6
 * Update patch target links
 * Add namespacing to tests/urls.py
 
-
 ### 1.0.0
 
 * Add Django 2.0 compatibility testing
