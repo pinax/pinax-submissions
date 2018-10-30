@@ -116,6 +116,7 @@ also valid but we are usually able to help you faster if you ping us in Slack.
 
 We also highly recommend reading our blog post on [Open Source and Self-Care](http://blog.pinaxproject.com/2016/01/19/open-source-and-self-care/).
 
+
 ## Code of Conduct
 
 In order to foster a kind, inclusive, and harassment-free community, the Pinax Project
