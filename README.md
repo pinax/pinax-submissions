@@ -21,6 +21,7 @@
   * [Features](#features)
   * [Supported Django and Python versions](#supported-django-and-python-versions)
 * [Documentation](#documentation)
+  * [Installation](#installation)
 * [Change Log](#change-log)
 * [Contribute](#contribute)
 * [Code of Conduct](#code-of-conduct)
@@ -31,7 +32,6 @@
 
 Pinax is an open-source platform built on the Django Web Framework. It is an ecosystem of reusable
 Django apps, themes, and starter project templates. This collection can be found at http://pinaxproject.com.
-
 
 
 ## pinax-submissions
@@ -57,7 +57,31 @@ Django \ Python | 2.7 | 3.4 | 3.5 | 3.6
 
 ## Documentation
 
-@@@ TODO
+### Installation
+
+To install pinax-submissions:
+
+```shell
+    $ pip install pinax-submissions
+```
+
+Add `pinax.submissions` to your `INSTALLED_APPS` setting:
+
+```python
+    INSTALLED_APPS = [
+        # other apps
+        "pinax.submissions",
+    ]
+```
+
+Add `pinax.submissions.urls` to your project urlpatterns:
+
+```python
+    urlpatterns = [
+        # other urls
+        url(r"^submissions/", include("pinax.submissions.urls", namespace="pinax_submissions")),
+    ]
+```
 
 
 ## Change Log
