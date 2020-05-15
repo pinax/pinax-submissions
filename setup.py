@@ -2,7 +2,7 @@ import os
 import sys
 from setuptools import find_packages, setup
 
-VERSION = "1.0.3"
+VERSION = "2.0.0"
 LONG_DESCRIPTION = """
 .. image:: http://pinaxproject.com/pinax-design/patches/pinax-submissions.svg
     :target: https://pypi.python.org/pypi/pinax-submissions/
@@ -38,24 +38,17 @@ Pinax Submissions
 
 ``pinax-submissions`` is an app for proposing and reviewing submissions.
 
-
 Supported Django and Python Versions
 ------------------------------------
-+-----------------+-----+-----+-----+-----+
-| Django \ Python | 2.7 | 3.4 | 3.5 | 3.6 |
-+=================+=====+=====+=====+=====+
-| 1.11            |  *  |  *  |  *  |  *  |
-+-----------------+-----+-----+-----+-----+
-| 2.0             |     |  *  |  *  |  *  |
-+-----------------+-----+-----+-----+-----+
+
++-----------------+-----+-----+-----+
+| Django / Python | 3.6 | 3.7 | 3.8 |
++=================+=====+=====+=====+
+|  2.2            |  *  |  *  |  *  |
++-----------------+-----+-----+-----+
+|  3.0            |  *  |  *  |  *  |
++-----------------+-----+-----+-----+
 """
-
-
-# Publish Helper.
-if sys.argv[-1] == 'publish':
-    os.system('python setup.py sdist bdist_wheel upload')
-    sys.exit()
-
 
 setup(
     author="Pinax Team",
@@ -74,22 +67,19 @@ setup(
         "Development Status :: 5 - Production/Stable",
         "Environment :: Web Environment",
         "Framework :: Django",
-        "Framework :: Django :: 1.11",
-        "Framework :: Django :: 2.0",
+        "Framework :: Django :: 2.2",
+        "Framework :: Django :: 3.0",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2",
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     install_requires=[
-        "django>=1.11",
+        "django>=2.2",
         "Markdown>=2.6.3",
         "django-model-utils>=3.1.1",
         "django-appconf>=1.0.2"
