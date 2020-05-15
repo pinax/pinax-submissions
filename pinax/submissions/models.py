@@ -9,7 +9,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
 from model_utils.managers import InheritanceManager
@@ -23,7 +22,6 @@ def uuid_filename(instance, filename):
     return os.path.join("document", filename)
 
 
-@python_2_unicode_compatible
 class SubmissionKind(models.Model):
     """
     e.g. talk vs panel vs tutorial vs poster
@@ -35,7 +33,6 @@ class SubmissionKind(models.Model):
         return self.name
 
 
-@python_2_unicode_compatible
 class SubmissionBase(models.Model):
 
     kind = models.ForeignKey(SubmissionKind, verbose_name=_("Kind"), on_delete=models.CASCADE)
