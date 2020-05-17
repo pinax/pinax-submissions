@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 import os
 import uuid
 
@@ -18,7 +15,7 @@ from .hooks import hookset
 
 def uuid_filename(instance, filename):
     ext = filename.split(".")[-1]
-    filename = "%s.%s" % (uuid.uuid4(), ext)
+    filename = f"{uuid.uuid4()}.{ext}"
     return os.path.join("document", filename)
 
 
@@ -96,7 +93,7 @@ class SubmissionBase(models.Model):
         }
 
     def __str__(self):
-        return "<Submission pk={}, kind={}>".format(self.pk, self.kind)
+        return f"<Submission pk={self.pk}, kind={self.kind}>"
 
 
 class SupportingDocument(models.Model):
@@ -143,7 +140,7 @@ class SubmissionMessage(models.Model):
 
     def save(self, *args, **kwargs):
         self.message_html = hookset.parse_content(self.message)
-        return super(SubmissionMessage, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     class Meta:
         ordering = ["submitted_at"]
@@ -160,7 +157,7 @@ class Review(models.Model):
 
     def save(self, **kwargs):
         self.comment_html = hookset.parse_content(self.comment)
-        super(Review, self).save(**kwargs)
+        super().save(**kwargs)
 
     class Meta:
         verbose_name = _("review")
@@ -210,7 +207,7 @@ class Comment(models.Model):
 
     def save(self, *args, **kwargs):
         self.comment_html = hookset.parse_content(self.comment)
-        return super(Comment, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
 
 class NotificationTemplate(models.Model):

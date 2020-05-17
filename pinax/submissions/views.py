@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mass_mail
@@ -131,7 +129,7 @@ class SubmissionEdit(LoggedInMixin, UpdateView):
         return settings.PINAX_SUBMISSIONS_FORMS[self.get_object().kind.slug]
 
     def get_context_data(self, **kwargs):
-        return super(SubmissionEdit, self).get_context_data(submission=self.get_object(), **kwargs)
+        return super().get_context_data(submission=self.get_object(), **kwargs)
 
     def form_valid(self, form):
         self.submission = form.save()
@@ -213,7 +211,7 @@ class SubmissionDetail(LoggedInMixin, DetailView):
         )
 
     def get_context_data(self, **kwargs):
-        context = super(SubmissionDetail, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         self.object = self.get_object()
         context["submission"] = self.object
         context["message_form"] = SubmitterCommentForm(instance=self.object)
@@ -242,7 +240,7 @@ class SubmissionCancel(LoggedInMixin, DetailView):
         return redirect(hookset.get_submission_cancel_success_url(submission))
 
     def get_context_data(self, **kwargs):
-        context = super(SubmissionCancel, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         self.object = self.get_object()
         context["submission"] = self.object
         return context
@@ -270,7 +268,7 @@ class Reviews(LoggedInMixin, CanReviewMixin, ListView):
     queryset = SubmissionBase.objects.all()
 
     def get_context_data(self, **kwargs):
-        context = super(Reviews, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         queryset = self.queryset
 
         if self.assigned:
@@ -363,7 +361,7 @@ class ReviewDetail(LoggedInMixin, CanReviewMixin, DetailView):
             self.get_context_data(review_form=review_form))
 
     def get_context_data(self, **kwargs):
-        context = super(ReviewDetail, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         submission = self.get_object()
         reviews = Review.objects.filter(
             submission=submission
