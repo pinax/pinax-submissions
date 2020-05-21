@@ -8,7 +8,7 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 
 
-class DefaultHookSet(object):
+class DefaultHookSet:
 
     def __init__(self):
         from .conf import settings  # if put globally there is a race condition
@@ -60,7 +60,7 @@ class DefaultHookSet(object):
             "STATIC_URL": self.settings.STATIC_URL,
         }
         ctx.update(kwargs.get("context", {}))
-        subject = "[%s] %s" % (
+        subject = "[{}] {}".format(
             current_site.name,
             render_to_string(
                 "pinax/submissions/emails/%s/subject.txt" % kind,
@@ -94,7 +94,7 @@ class DefaultHookSet(object):
         return "/"
 
 
-class HookProxy(object):
+class HookProxy:
 
     def __getattr__(self, attr):
         from .conf import settings  # if put globally there is a race condition

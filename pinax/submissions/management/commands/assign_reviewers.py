@@ -7,5 +7,5 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         for submission in SubmissionBase.objects.filter(cancelled=False):
-            print("Creating assignments for {}".format(submission))
+            print(f"Creating assignments for {submission}")
             ReviewAssignment.create_assignments(submission)

@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 import os
 import uuid
 
@@ -9,7 +6,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
 from model_utils.managers import InheritanceManager
@@ -19,11 +15,10 @@ from .hooks import hookset
 
 def uuid_filename(instance, filename):
     ext = filename.split(".")[-1]
-    filename = "%s.%s" % (uuid.uuid4(), ext)
+    filename = f"{uuid.uuid4()}.{ext}"
     return os.path.join("document", filename)
 
 
-@python_2_unicode_compatible
 class SubmissionKind(models.Model):
     """
     e.g. talk vs panel vs tutorial vs poster
@@ -35,7 +30,6 @@ class SubmissionKind(models.Model):
         return self.name
 
 
-@python_2_unicode_compatible
 class SubmissionBase(models.Model):
 
     kind = models.ForeignKey(SubmissionKind, verbose_name=_("Kind"), on_delete=models.CASCADE)
@@ -99,7 +93,7 @@ class SubmissionBase(models.Model):
         }
 
     def __str__(self):
-        return "<Submission pk={}, kind={}>".format(self.pk, self.kind)
+        return f"<Submission pk={self.pk}, kind={self.kind}>"
 
 
 class SupportingDocument(models.Model):
@@ -146,7 +140,7 @@ class SubmissionMessage(models.Model):
 
     def save(self, *args, **kwargs):
         self.message_html = hookset.parse_content(self.message)
-        return super(SubmissionMessage, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     class Meta:
         ordering = ["submitted_at"]
@@ -163,7 +157,7 @@ class Review(models.Model):
 
     def save(self, **kwargs):
         self.comment_html = hookset.parse_content(self.comment)
-        super(Review, self).save(**kwargs)
+        super().save(**kwargs)
 
     class Meta:
         verbose_name = _("review")
@@ -213,7 +207,7 @@ class Comment(models.Model):
 
     def save(self, *args, **kwargs):
         self.comment_html = hookset.parse_content(self.comment)
-        return super(Comment, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
 
 class NotificationTemplate(models.Model):

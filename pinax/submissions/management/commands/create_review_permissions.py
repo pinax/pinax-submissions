@@ -13,8 +13,8 @@ class Command(BaseCommand):
         )
         for action in ["review", "manage", "review_submissions"]:
             perm, created = Permission.objects.get_or_create(
-                codename="can_{}".format(action),
+                codename=f"can_{action}",
                 content_type__pk=ct.id,
-                defaults={"name": "Can {}".format(action), "content_type": ct}
+                defaults={"name": f"Can {action}", "content_type": ct}
             )
             print(perm)
